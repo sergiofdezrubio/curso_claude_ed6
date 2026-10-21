@@ -1,0 +1,21 @@
+# Dependencias y artefactos de compilación
+node_modules/
+dist/
+.angular/
+coverage/
+
+# Bases de datos locales (SQLite)
+*.db
+*.db-journal
+
+# Secretos y entorno local
+.env
+.env.*
+!.env.example
+
+# Sistema operativo y editores
+.DS_Store
+
+# Worktrees de los agentes y ajustes locales de Claude Code
+.claude/workTrees/
+.claude/settings.local.json
