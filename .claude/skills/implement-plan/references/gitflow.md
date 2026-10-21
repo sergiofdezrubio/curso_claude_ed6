@@ -63,8 +63,8 @@ El plan `docs/plans/2026-10-15-feature-asociar-vendehumo-usuario.md` da la rama 
 Cada rama de trabajo se desarrolla en su propio `git worktree`, dentro de `.claude/workTrees/<rama con "/" sustituida por "-">` (carpeta ignorada por Git). Así el directorio principal no cambia de rama y varias ramas pueden avanzar a la vez.
 
 - Un worktree por rama: Git no permite tener la misma rama en dos worktrees.
-- Si un plan afecta a varios paquetes y se implementa con un agente por paquete, hay una rama y un worktree por agente, con el paquete como sufijo: `dev/feat_<nombre>_<paquete>` (por ejemplo `dev/feat_asociar-vendehumo-usuario_web-admin`).
-- Si el plan se implementa por fases, cada fase tiene su propia rama con el sufijo `_fase-<N>`: `dev/fix_<nombre>_fase-<N>` (y con varios agentes, `dev/fix_<nombre>_fase-<N>_<paquete>`). Cada fase sale del `develop` actual y se integra en él antes de empezar la siguiente.
+- Si la skill lanza tareas en paralelo, cada tarea de la tanda tiene una sub-rama y un worktree propios, con el sufijo `_t<N>`: `<rama-de-fase>_t<N>` (por ejemplo `dev/fix_vulnerabilidades-owasp_fase-3_t13`). Salen de la rama de fase y se integran en ella con `--no-ff` antes de continuar; los worktrees de tarea se retiran al integrarlas.
+- Si el plan se implementa por fases, cada fase tiene su propia rama con el sufijo `_fase-<N>`: `dev/fix_<nombre>_fase-<N>` (y sus sub-ramas de tarea, `dev/fix_<nombre>_fase-<N>_t<M>`). Cada fase sale del `develop` actual y se integra en él antes de empezar la siguiente.
 - Comandos útiles: `git worktree add -b <rama> <ruta> develop`, `git worktree list`, `git worktree remove <ruta>`.
 
 ## Reglas
