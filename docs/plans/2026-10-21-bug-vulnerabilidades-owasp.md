@@ -15,7 +15,7 @@ Esta tabla y las casillas de las tareas son la fuente de verdad del progreso. Un
 | ---- | ------ | ------ | ---------- | ------ |
 | 1 | Secreto JWT | 1-3 | — | completada |
 | 2 | Pedidos | 4-12 | 1 | completada |
-| 3 | Aislamiento multi-tenant en platos e ingredientes | 13-17 | 1 | pendiente |
+| 3 | Aislamiento multi-tenant en platos e ingredientes | 13-17 | 1 | en curso |
 | 4 | Autenticación | 18-23 | 1 | pendiente |
 | 5 | Integridad de datos | 24-28 | 2 | pendiente |
 | 6 | Configuración y registro de eventos | 29-31 | 1 | pendiente |
@@ -188,7 +188,7 @@ Cada tarea dura entre 5 y 10 minutos y tiene un resultado comprobable. Los coman
 
 ### Fase 3 — Aislamiento multi-tenant en platos e ingredientes (`API-H2`)
 
-- [ ] **13. Middleware `requireSameRestaurant`** (10 min) — modelo: sonnet
+- [x] **13. Middleware `requireSameRestaurant`** (10 min) — modelo: sonnet
   - Archivo(s): `contexts/shared/infrastructure/http/middlewares.ts` (más su test)
   - Qué hacer: deja pasar al admin y, para el resto, exige `req.params.restaurantId === req.user.restaurantId`; si no, 403 con mensaje en español.
   - Hecho cuando: tests del middleware con admin, mismo restaurante, otro restaurante y usuario sin restaurante.

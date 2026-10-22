@@ -61,3 +61,18 @@ export const authorize = (roles: string[]) => {
         next()
     }
 }
+
+// Aislamiento multi-tenant: el admin accede a cualquier restaurante; el resto
+// solo al suyo (el de su token). Sin usuario o sin restaurante, se deniega.
+export const requireSameRestaurant = (req: AuthRequest, res: Response, next: NextFunction): void => {
+    const user = req.user
+    if (user?.role === 'admin') {
+        next()
+        return
+    }
+    if (!user || !user.restaurantId || req.params['restaurantId'] !== user.restaurantId) {
+        res.status(403).json({ error: 'Prohibido: no tienes acceso a este restaurante' })
+        return
+    }
+    next()
+}
