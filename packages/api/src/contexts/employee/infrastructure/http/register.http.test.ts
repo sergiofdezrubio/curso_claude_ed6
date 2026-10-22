@@ -34,3 +34,36 @@ describe('POST /api/v1/auth/register - validación de contraseña', () => {
         expect(res.status).toBe(201)
     })
 })
+
+describe('Emails sin distinguir mayúsculas', () => {
+    beforeAll(async () => {
+        await dbConfig.initialize()
+    })
+
+    afterAll(async () => {
+        await dbConfig.close()
+    })
+
+    const datos = { firstName: 'Luis', lastName: 'Gil', password: 'contraseña-valida-123' }
+
+    it('registrar el mismo email con otras mayúsculas devuelve 409 DuplicatedEmailError', async () => {
+        const primero = await request(app)
+            .post('/api/v1/auth/register')
+            .send({ ...datos, email: 'admin@resttek.com' })
+        expect(primero.status).toBe(201)
+
+        const segundo = await request(app)
+            .post('/api/v1/auth/register')
+            .send({ ...datos, email: 'ADMIN@resttek.com' })
+        expect(segundo.status).toBe(409)
+        expect(segundo.body.error).toBe('DuplicatedEmailError')
+    })
+
+    it('el login con otras mayúsculas funciona tras registrar en minúsculas', async () => {
+        const res = await request(app)
+            .post('/api/v1/auth/login')
+            .send({ email: 'Admin@Resttek.com', password: datos.password })
+        expect(res.status).toBe(200)
+        expect(res.body.token).toBeTruthy()
+    })
+})

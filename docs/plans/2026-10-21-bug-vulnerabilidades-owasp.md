@@ -16,7 +16,7 @@ Esta tabla y las casillas de las tareas son la fuente de verdad del progreso. Un
 | 1 | Secreto JWT | 1-3 | — | completada |
 | 2 | Pedidos | 4-12 | 1 | completada |
 | 3 | Aislamiento multi-tenant en platos e ingredientes | 13-17 | 1 | completada |
-| 4 | Autenticación | 18-23 | 1 | en curso |
+| 4 | Autenticación | 18-23 | 1 | completada |
 | 5 | Integridad de datos | 24-28 | 2 | pendiente |
 | 6 | Configuración y registro de eventos | 29-31 | 1 | pendiente |
 | 7 | Revocación de sesiones | 32-34 | 1, 3 | pendiente |
@@ -231,10 +231,11 @@ Cada tarea dura entre 5 y 10 minutos y tiene un resultado comprobable. Los coman
   - Archivo(s): `contexts/shared/domain/value-objects/Email.ts`
   - Qué hacer: aplicar `trim().toLowerCase()` antes de validar y guardar.
   - Hecho cuando: `Email.create('Admin@Resttek.com').value` devuelve `admin@resttek.com`.
-- [ ] **23. Migración `UNIQUE COLLATE NOCASE` en emails** (10 min) — modelo: sonnet
+- [x] **23. Migración `UNIQUE COLLATE NOCASE` en emails** (10 min) — modelo: sonnet
   - Archivo(s): `packages/api/src/config/database.ts` (migraciones iniciales)
   - Qué hacer: índice único `COLLATE NOCASE` sobre `employees.email` y paso previo que pase a minúsculas los emails existentes (`UPDATE employees SET email = lower(email)`). Comprobar que no hay duplicados antes de crear el índice.
   - Hecho cuando: `npm run seed` sigue funcionando y registrar `ADMIN@resttek.com` devuelve 409.
+  - Desviación: se normaliza el email con `new Email(...).getValue()` en `LoginUseCase`, `RegisterClientUseCase` y `CreateEmployeeUseCase`, y `SqliteEmployeeRepository.findByEmail` compara con `COLLATE NOCASE`; sin ello el duplicado no se detectaba y el login con mayúsculas fallaba. Además `errorHandler` mapea `DuplicatedEmailError` a 409 (antes devolvía 400). Si hay emails duplicados que solo difieren en mayúsculas, la migración no toca datos ni crea el índice y emite un `console.warn`.
 
 ### Fase 5 — Integridad de datos (`API-H9`, `API-H10`, `API-H12`)
 

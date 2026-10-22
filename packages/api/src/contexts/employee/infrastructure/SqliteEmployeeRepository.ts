@@ -16,7 +16,7 @@ export class SqliteEmployeeRepository implements IEmployeeRepository {
 
     async findByEmail(email: string): Promise<Employee | null> {
         const row = await this.db.get<any>(
-            'SELECT id, first_name as firstName, last_name as lastName, email, password_hash as passwordHash, role, restaurant_id as restaurantId FROM employees WHERE email = ?',
+            'SELECT id, first_name as firstName, last_name as lastName, email, password_hash as passwordHash, role, restaurant_id as restaurantId FROM employees WHERE email = ? COLLATE NOCASE',
             [email]
         )
         if (!row) return null
