@@ -2,7 +2,10 @@ import { describe, it, expect, beforeEach } from 'vitest'
 import { OrderService } from './order.service.js'
 import { MockOrderRepository } from '@repositories/mocks/MockOrderRepository.js'
 import type { Order } from '@models/order.model.js'
-import { OrderNotFoundError, InvalidOrderStatusError, InvalidOrderItemsError } from '@errors/DomainErrors.js'
+import { OrderNotFoundError, InvalidOrderStatusError, InvalidOrderItemsError, ForbiddenActionError } from '@errors/DomainErrors.js'
+import type { AuthUser } from '@shared/infrastructure/http/middlewares.js'
+
+const admin: AuthUser = { id: 'admin-1', role: 'admin', restaurantId: null }
 
 describe('OrderService.updateItemStatus', () => {
     let repo: MockOrderRepository
@@ -27,23 +30,23 @@ describe('OrderService.updateItemStatus', () => {
     })
 
     it('should update the status of an item successfully', async () => {
-        await service.updateItemStatus('order-1', 'item-1', 'preparando')
+        await service.updateItemStatus('order-1', 'item-1', 'preparando', admin)
         const updatedItem = testOrder.items[0]!
         expect(updatedItem.status).toBe('preparando')
     })
 
     it('should throw an error if the order does not exist', async () => {
-        await expect(service.updateItemStatus('order-bad', 'item-1', 'preparando'))
+        await expect(service.updateItemStatus('order-bad', 'item-1', 'preparando', admin))
             .rejects.toThrow(OrderNotFoundError)
     })
 
     it('should throw an error if the item does not exist inside the order', async () => {
-        await expect(service.updateItemStatus('order-1', 'item-bad', 'preparando'))
+        await expect(service.updateItemStatus('order-1', 'item-bad', 'preparando', admin))
             .rejects.toThrow(OrderNotFoundError)
     })
 
     it('should throw DomainError if status is invalid', async () => {
-        await expect(service.updateItemStatus('order-1', 'item-1', 'invalid-status'))
+        await expect(service.updateItemStatus('order-1', 'item-1', 'invalid-status', admin))
             .rejects.toThrow(InvalidOrderStatusError)
     })
 })
@@ -55,9 +58,8 @@ describe('OrderService.create (validación de items)', () => {
     const crear = (quantity: unknown) => service.create({
         restaurantId: 'rest-1',
         tableId: null,
-        clientId: null,
         items: [{ dishId: 'dish-1', quantity: quantity as number, notes: null }]
-    })
+    }, admin)
 
     const lineas = (n: number) =>
         Array.from({ length: n }, (_, i) => ({ dishId: `dish-${i}`, quantity: 1, notes: null }))
@@ -76,17 +78,17 @@ describe('OrderService.create (validación de items)', () => {
     )
 
     it('debe rechazar un pedido con items vacío', async () => {
-        await expect(service.create({ restaurantId: 'rest-1', tableId: null, clientId: null, items: [] }))
+        await expect(service.create({ restaurantId: 'rest-1', tableId: null, items: [] }, admin))
             .rejects.toThrow(InvalidOrderItemsError)
     })
 
     it('debe rechazar items que no es un array', async () => {
-        await expect(service.create({ restaurantId: 'rest-1', tableId: null, clientId: null, items: 'x' as never }))
+        await expect(service.create({ restaurantId: 'rest-1', tableId: null, items: 'x' as never }, admin))
             .rejects.toThrow(InvalidOrderItemsError)
     })
 
     it('debe rechazar un pedido con 31 líneas', async () => {
-        await expect(service.create({ restaurantId: 'rest-1', tableId: null, clientId: null, items: lineas(31) }))
+        await expect(service.create({ restaurantId: 'rest-1', tableId: null, items: lineas(31) }, admin))
             .rejects.toThrow(InvalidOrderItemsError)
         expect(repo.orders).toHaveLength(0)
     })
@@ -95,9 +97,8 @@ describe('OrderService.create (validación de items)', () => {
         await expect(service.create({
             restaurantId: 'rest-1',
             tableId: null,
-            clientId: null,
             items: [{ dishId: dishId as string, quantity: 1, notes: null }]
-        })).rejects.toThrow(InvalidOrderItemsError)
+        }, admin)).rejects.toThrow(InvalidOrderItemsError)
         expect(repo.orders).toHaveLength(0)
     })
 
@@ -108,12 +109,75 @@ describe('OrderService.create (validación de items)', () => {
     })
 
     it('debe aceptar el límite de 30 líneas', async () => {
-        const order = await service.create({ restaurantId: 'rest-1', tableId: null, clientId: null, items: lineas(30) })
+        const order = await service.create({ restaurantId: 'rest-1', tableId: null, items: lineas(30) }, admin)
         expect(order.items).toHaveLength(30)
     })
 
     it('debe aceptar quantity 50', async () => {
         const order = await crear(50)
         expect(order.items).toHaveLength(50)
+    })
+})
+
+describe('OrderService (pertenencia)', () => {
+    let repo: MockOrderRepository
+    let service: OrderService
+
+    const camareroRest1: AuthUser = { id: 'cam-1', role: 'camarero', restaurantId: 'rest-1' }
+    const managerRest2: AuthUser = { id: 'man-2', role: 'manager', restaurantId: 'rest-2' }
+    const cliente: AuthUser = { id: 'cli-1', role: 'cliente', restaurantId: null }
+
+    beforeEach(async () => {
+        repo = new MockOrderRepository()
+        service = new OrderService(repo)
+        await repo.create({
+            id: 'order-1',
+            restaurantId: 'rest-1',
+            tableId: null,
+            clientId: 'cli-otro',
+            createdAt: new Date(),
+            items: [{ id: 'item-1', dishId: 'dish-1', quantity: 1, notes: null, status: 'pendiente' }]
+        })
+    })
+
+    it('un usuario de otro restaurante no puede obtener el pedido', async () => {
+        await expect(service.getById('order-1', managerRest2)).rejects.toThrow(OrderNotFoundError)
+    })
+
+    it('un usuario de otro restaurante no puede modificar el pedido', async () => {
+        await expect(service.updateItemStatus('order-1', 'item-1', 'preparando', managerRest2))
+            .rejects.toThrow(OrderNotFoundError)
+        expect(repo.orders[0]!.items[0]!.status).toBe('pendiente')
+    })
+
+    it('el personal del mismo restaurante sí puede obtener el pedido', async () => {
+        const order = await service.getById('order-1', camareroRest1)
+        expect(order.id).toBe('order-1')
+    })
+
+    it('un cliente no puede obtener un pedido ajeno', async () => {
+        await expect(service.getById('order-1', cliente)).rejects.toThrow(OrderNotFoundError)
+    })
+
+    it('no se pueden listar los pedidos activos de otro restaurante', async () => {
+        await expect(service.listActive('rest-1', managerRest2)).rejects.toThrow(ForbiddenActionError)
+    })
+
+    it('el personal no puede crear pedidos en otro restaurante', async () => {
+        await expect(service.create({
+            restaurantId: 'rest-1',
+            tableId: null,
+            items: [{ dishId: 'dish-1', quantity: 1, notes: null }]
+        }, managerRest2)).rejects.toThrow(ForbiddenActionError)
+    })
+
+    it('el clientId del pedido creado es siempre el del usuario autenticado', async () => {
+        const order = await service.create({
+            restaurantId: 'rest-1',
+            tableId: null,
+            clientId: 'cli-otro',
+            items: [{ dishId: 'dish-1', quantity: 1, notes: null }]
+        } as never, cliente)
+        expect(order.clientId).toBe('cli-1')
     })
 })

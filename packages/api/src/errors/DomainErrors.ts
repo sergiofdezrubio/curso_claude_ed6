@@ -168,3 +168,9 @@ export class InvalidOrderItemsError extends AppError {
     super(message ?? 'Líneas de pedido no válidas')
   }
 }
+
+export class ForbiddenActionError extends AppError {
+  constructor() {
+    super('No tienes permiso para esta acción')
+  }
+}

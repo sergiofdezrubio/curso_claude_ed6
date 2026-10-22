@@ -161,7 +161,7 @@ Cada tarea dura entre 5 y 10 minutos y tiene un resultado comprobable. Los coman
   - Archivo(s): `contexts/shared/infrastructure/http/middlewares.ts`, `src/models/order.model.ts`
   - Qué hacer: tipar `AuthUser` (`id`, `role`, `restaurantId`) y definir en el modelo la matriz `rol → transiciones permitidas` según los estados reales de `order.model.ts`. Confirmar que `req.user` ya contiene `restaurantId`.
   - Hecho cuando: existe el tipo y la matriz exportados, y `tsc --noEmit` compila.
-- [ ] **7. Control de pertenencia en `OrderService`** (10 min) — modelo: opus
+- [x] **7. Control de pertenencia en `OrderService`** (10 min) — modelo: opus
   - Archivo(s): `packages/api/src/services/order.service.ts`
   - Qué hacer: los métodos de lectura, creación y cambio de estado reciben `AuthUser`. El admin ve todo, el personal solo su `restaurantId` y el cliente solo sus pedidos. En `create`, el personal solo puede crear en su restaurante. Lanzar un error de dominio mapeado a 403 (o 404 para no revelar la existencia del pedido).
   - Hecho cuando: un usuario de otro restaurante no puede obtener ni modificar un pedido (cubierto en la tarea 11).
