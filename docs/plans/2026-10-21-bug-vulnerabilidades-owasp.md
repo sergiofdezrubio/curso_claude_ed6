@@ -15,7 +15,7 @@ Esta tabla y las casillas de las tareas son la fuente de verdad del progreso. Un
 | ---- | ------ | ------ | ---------- | ------ |
 | 1 | Secreto JWT | 1-3 | — | completada |
 | 2 | Pedidos | 4-12 | 1 | completada |
-| 3 | Aislamiento multi-tenant en platos e ingredientes | 13-17 | 1 | pendiente |
+| 3 | Aislamiento multi-tenant en platos e ingredientes | 13-17 | 1 | completada |
 | 4 | Autenticación | 18-23 | 1 | pendiente |
 | 5 | Integridad de datos | 24-28 | 2 | pendiente |
 | 6 | Configuración y registro de eventos | 29-31 | 1 | pendiente |
@@ -188,23 +188,23 @@ Cada tarea dura entre 5 y 10 minutos y tiene un resultado comprobable. Los coman
 
 ### Fase 3 — Aislamiento multi-tenant en platos e ingredientes (`API-H2`)
 
-- [ ] **13. Middleware `requireSameRestaurant`** (10 min) — modelo: sonnet
+- [x] **13. Middleware `requireSameRestaurant`** (10 min) — modelo: sonnet
   - Archivo(s): `contexts/shared/infrastructure/http/middlewares.ts` (más su test)
   - Qué hacer: deja pasar al admin y, para el resto, exige `req.params.restaurantId === req.user.restaurantId`; si no, 403 con mensaje en español.
   - Hecho cuando: tests del middleware con admin, mismo restaurante, otro restaurante y usuario sin restaurante.
-- [ ] **14. Aplicar el middleware a las rutas anidadas** (5 min) — modelo: haiku
+- [x] **14. Aplicar el middleware a las rutas anidadas** (5 min) — modelo: haiku
   - Archivo(s): `packages/api/src/routes/dish.routes.ts`, `packages/api/src/routes/ingredient.routes.ts`
   - Qué hacer: añadir `requireSameRestaurant` tras `authenticate` en todas las rutas bajo `/restaurants/:restaurantId/...`.
   - Hecho cuando: `gerente1` recibe 403 en `GET /restaurants/rest-2/ingredients`.
-- [ ] **15. Filtrar platos por restaurante en repositorio y servicio** (10 min) — modelo: sonnet
+- [x] **15. Filtrar platos por restaurante en repositorio y servicio** (10 min) — modelo: sonnet
   - Archivo(s): `packages/api/src/repositories/dish.repository.ts`, `packages/api/src/services/dish.service.ts`, `repositories/mocks`
   - Qué hacer: `findById`, `update` y `delete` reciben `restaurantId` y usan `WHERE id = ? AND restaurant_id = ?`. Un plato de otro restaurante responde 404. Actualizar mocks y controlador.
   - Hecho cuando: `DELETE /restaurants/rest-1/dishes/<id de rest-2>` devuelve 404 y el plato sigue existiendo.
-- [ ] **16. Filtrar ingredientes por restaurante** (10 min) — modelo: sonnet
+- [x] **16. Filtrar ingredientes por restaurante** (10 min) — modelo: sonnet
   - Archivo(s): `packages/api/src/repositories/ingredient.repository.ts`, `packages/api/src/services/ingredient.service.ts`, `repositories/mocks`
   - Qué hacer: mismo patrón que la tarea 15 para las operaciones por id de ingredientes.
   - Hecho cuando: un ingrediente de otro restaurante no se puede leer ni modificar por id.
-- [ ] **17. Tests de aislamiento entre restaurantes** (10 min) — modelo: sonnet
+- [x] **17. Tests de aislamiento entre restaurantes** (10 min) — modelo: sonnet
   - Archivo(s): `repositories/dish.repository.test.ts`, `repositories/ingredient.repository.test.ts`, tests de servicios
   - Qué hacer: con SQLite en memoria, insertar primero los restaurantes padre y comprobar que las consultas por id con otro `restaurantId` no devuelven ni modifican nada.
   - Hecho cuando: los tests pasan.

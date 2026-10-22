@@ -13,19 +13,19 @@ interface IngredientRow {
 }
 
 export interface IngredientRepository {
-    findById(id: string): Promise<Ingredient | null>
+    findById(id: string, restaurantId: string): Promise<Ingredient | null>
     findByRestaurantId(restaurantId: string): Promise<Ingredient[]>
     save(ingredient: Ingredient): Promise<void>
-    delete(id: string): Promise<void>
+    delete(id: string, restaurantId: string): Promise<void>
 }
 
 export class SqliteIngredientRepository implements IngredientRepository {
     constructor(private db: Database) {}
 
-    async findById(id: string): Promise<Ingredient | null> {
+    async findById(id: string, restaurantId: string): Promise<Ingredient | null> {
         const row = await this.db.get<IngredientRow>(
-            'SELECT id, name, unit, current_stock as currentStock, restaurant_id as restaurantId, created_at as createdAt, updated_at as updatedAt FROM ingredients WHERE id = ?',
-            [id]
+            'SELECT id, name, unit, current_stock as currentStock, restaurant_id as restaurantId, created_at as createdAt, updated_at as updatedAt FROM ingredients WHERE id = ? AND restaurant_id = ?',
+            [id, restaurantId]
         )
         if (!row) return null
         return this.mapToIngredient(row)
@@ -40,11 +40,11 @@ export class SqliteIngredientRepository implements IngredientRepository {
     }
 
     async save(ingredient: Ingredient): Promise<void> {
-        const existing = await this.findById(ingredient.id)
+        const existing = await this.findById(ingredient.id, ingredient.restaurantId)
         if (existing) {
             await this.db.run(
-                'UPDATE ingredients SET name = ?, unit = ?, current_stock = ?, updated_at = ? WHERE id = ?',
-                [ingredient.name, ingredient.unit, ingredient.currentStock, ingredient.updatedAt, ingredient.id]
+                'UPDATE ingredients SET name = ?, unit = ?, current_stock = ?, updated_at = ? WHERE id = ? AND restaurant_id = ?',
+                [ingredient.name, ingredient.unit, ingredient.currentStock, ingredient.updatedAt, ingredient.id, ingredient.restaurantId]
             )
         } else {
             await this.db.run(
@@ -54,8 +54,8 @@ export class SqliteIngredientRepository implements IngredientRepository {
         }
     }
 
-    async delete(id: string): Promise<void> {
-        await this.db.run('DELETE FROM ingredients WHERE id = ?', [id])
+    async delete(id: string, restaurantId: string): Promise<void> {
+        await this.db.run('DELETE FROM ingredients WHERE id = ? AND restaurant_id = ?', [id, restaurantId])
     }
 
     private mapToIngredient(row: IngredientRow): Ingredient {
