@@ -4,8 +4,9 @@ import type { Ingredient } from '@models/ingredient.model.js'
 export class MockIngredientRepository implements IngredientRepository {
     private ingredients: Map<string, Ingredient> = new Map()
 
-    async findById(id: string): Promise<Ingredient | null> {
-        return this.ingredients.get(id) || null
+    async findById(id: string, restaurantId: string): Promise<Ingredient | null> {
+        const ingredient = this.ingredients.get(id)
+        return ingredient && ingredient.restaurantId === restaurantId ? ingredient : null
     }
 
     async findByRestaurantId(restaurantId: string): Promise<Ingredient[]> {
@@ -17,7 +18,8 @@ export class MockIngredientRepository implements IngredientRepository {
         this.ingredients.set(ingredient.id, ingredient)
     }
 
-    async delete(id: string): Promise<void> {
-        this.ingredients.delete(id)
+    async delete(id: string, restaurantId: string): Promise<void> {
+        const ingredient = this.ingredients.get(id)
+        if (ingredient && ingredient.restaurantId === restaurantId) this.ingredients.delete(id)
     }
 }

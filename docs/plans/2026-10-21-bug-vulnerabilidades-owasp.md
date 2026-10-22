@@ -200,7 +200,7 @@ Cada tarea dura entre 5 y 10 minutos y tiene un resultado comprobable. Los coman
   - Archivo(s): `packages/api/src/repositories/dish.repository.ts`, `packages/api/src/services/dish.service.ts`, `repositories/mocks`
   - Qué hacer: `findById`, `update` y `delete` reciben `restaurantId` y usan `WHERE id = ? AND restaurant_id = ?`. Un plato de otro restaurante responde 404. Actualizar mocks y controlador.
   - Hecho cuando: `DELETE /restaurants/rest-1/dishes/<id de rest-2>` devuelve 404 y el plato sigue existiendo.
-- [ ] **16. Filtrar ingredientes por restaurante** (10 min) — modelo: sonnet
+- [x] **16. Filtrar ingredientes por restaurante** (10 min) — modelo: sonnet
   - Archivo(s): `packages/api/src/repositories/ingredient.repository.ts`, `packages/api/src/services/ingredient.service.ts`, `repositories/mocks`
   - Qué hacer: mismo patrón que la tarea 15 para las operaciones por id de ingredientes.
   - Hecho cuando: un ingrediente de otro restaurante no se puede leer ni modificar por id.
