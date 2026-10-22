@@ -16,7 +16,7 @@ Esta tabla y las casillas de las tareas son la fuente de verdad del progreso. Un
 | 1 | Secreto JWT | 1-3 | — | completada |
 | 2 | Pedidos | 4-12 | 1 | completada |
 | 3 | Aislamiento multi-tenant en platos e ingredientes | 13-17 | 1 | completada |
-| 4 | Autenticación | 18-23 | 1 | pendiente |
+| 4 | Autenticación | 18-23 | 1 | en curso |
 | 5 | Integridad de datos | 24-28 | 2 | pendiente |
 | 6 | Configuración y registro de eventos | 29-31 | 1 | pendiente |
 | 7 | Revocación de sesiones | 32-34 | 1, 3 | pendiente |
@@ -211,7 +211,7 @@ Cada tarea dura entre 5 y 10 minutos y tiene un resultado comprobable. Los coman
 
 ### Fase 4 — Autenticación (`API-H5`, `API-H6`, `API-H7`, `API-H17`)
 
-- [ ] **18. Rate limiting en login y registro** (8 min) — modelo: sonnet
+- [x] **18. Rate limiting en login y registro** (8 min) — modelo: sonnet
   - Archivo(s): `packages/api/package.json`, `contexts/employee/infrastructure/http/auth.routes.ts`
   - Qué hacer: instalar `express-rate-limit`. Login: 5 intentos cada 15 minutos por IP; registro: 10 por hora. Mensaje en español y cabeceras estándar. Desactivable en `NODE_ENV=test`.
   - Hecho cuando: el sexto login fallido seguido devuelve 429.
