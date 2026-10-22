@@ -157,7 +157,7 @@ Cada tarea dura entre 5 y 10 minutos y tiene un resultado comprobable. Los coman
   - Archivo(s): `packages/api/src/services/order.service.test.ts`
   - Qué hacer: casos para `items` vacío, `quantity` fuera de rango, string o decimal, demasiadas líneas y un pedido válido.
   - Hecho cuando: `npx vitest run src/services/order.service.test.ts` pasa.
-- [ ] **6. Diseñar el contexto de usuario y la matriz de permisos de pedidos** (10 min) — modelo: opus
+- [x] **6. Diseñar el contexto de usuario y la matriz de permisos de pedidos** (10 min) — modelo: opus
   - Archivo(s): `contexts/shared/infrastructure/http/middlewares.ts`, `src/models/order.model.ts`
   - Qué hacer: tipar `AuthUser` (`id`, `role`, `restaurantId`) y definir en el modelo la matriz `rol → transiciones permitidas` según los estados reales de `order.model.ts`. Confirmar que `req.user` ya contiene `restaurantId`.
   - Hecho cuando: existe el tipo y la matriz exportados, y `tsc --noEmit` compila.
