@@ -138,7 +138,7 @@ Cada tarea dura entre 5 y 10 minutos y tiene un resultado comprobable. Los coman
   - Archivo(s): `packages/api/src/config/env.ts` (nuevo), `packages/api/tsconfig.json` (alias `@config` ya existe)
   - Qué hacer: importar `dotenv/config`, exportar `JWT_SECRET`. Si `NODE_ENV` no es `test` ni `development` y el secreto falta o tiene menos de 32 caracteres, lanzar un `Error` en español al cargar. En `test` y `development` usar un valor fijo de desarrollo.
   - Hecho cuando: `NODE_ENV=production npx tsx -e "import('./src/config/env.ts')"` falla con el mensaje, y con un secreto válido no.
-- [ ] **2. Usar el secreto único y endurecer JWT** (5 min) — modelo: haiku
+- [x] **2. Usar el secreto único y endurecer JWT** (5 min) — modelo: haiku
   - Archivo(s): `contexts/shared/infrastructure/http/middlewares.ts`, `contexts/employee/infrastructure/BcryptAuthService.ts`
   - Qué hacer: sustituir `process.env.JWT_SECRET || '...'` por el import de `@config/env.js`. Añadir `{ algorithms: ['HS256'] }` en `jwt.verify` y `{ algorithm: 'HS256' }` en `sign`. Subir `SALT_ROUNDS` a 12.
   - Hecho cuando: `grep -rn "super-secret-resttek-key" packages/api/src` solo aparece en `config/env.ts`.
