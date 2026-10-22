@@ -38,4 +38,41 @@ describe('SqliteDishRepository (Integration)', () => {
         await repo.delete('d2', 'rest-1')
         expect(await repo.findById('d2', 'rest-2')).not.toBeNull()
     })
+
+    describe('aislamiento por restaurante (datos intactos)', () => {
+        const now = new Date().toISOString()
+
+        beforeAll(async () => {
+            await db.run(
+                'INSERT INTO ingredients (id, name, unit, current_stock, restaurant_id, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?)',
+                ['ing-r2', 'Arroz', 'kg', 10, 'rest-2', now, now]
+            )
+            await repo.save({
+                id: 'd3', name: 'Fideua', description: 'original', price: 15, category: 'principal',
+                available: true, restaurantId: 'rest-2',
+                ingredients: [{ ingredientId: 'ing-r2', quantity: 2 }], createdAt: now, updatedAt: now
+            })
+        })
+
+        it('save con un restaurantId distinto no modifica el plato ni sus ingredientes', async () => {
+            await repo.save({
+                id: 'd3', name: 'Hackeado', description: null, price: 1, category: 'postre',
+                available: false, restaurantId: 'rest-1', ingredients: [], createdAt: now, updatedAt: now
+            }).catch(() => undefined)
+
+            const found = await repo.findById('d3', 'rest-2')
+            expect(found?.name).toBe('Fideua')
+            expect(found?.description).toBe('original')
+            expect(found?.price).toBe(15)
+            expect(found?.available).toBe(true)
+            expect(found?.ingredients).toEqual([{ ingredientId: 'ing-r2', quantity: 2 }])
+            expect(await repo.findById('d3', 'rest-1')).toBeNull()
+        })
+
+        it('delete con otro restaurante no borra los ingredientes del plato', async () => {
+            await repo.delete('d3', 'rest-1')
+            const found = await repo.findById('d3', 'rest-2')
+            expect(found?.ingredients).toEqual([{ ingredientId: 'ing-r2', quantity: 2 }])
+        })
+    })
 })

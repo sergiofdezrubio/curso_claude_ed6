@@ -15,7 +15,7 @@ Esta tabla y las casillas de las tareas son la fuente de verdad del progreso. Un
 | ---- | ------ | ------ | ---------- | ------ |
 | 1 | Secreto JWT | 1-3 | — | completada |
 | 2 | Pedidos | 4-12 | 1 | completada |
-| 3 | Aislamiento multi-tenant en platos e ingredientes | 13-17 | 1 | en curso |
+| 3 | Aislamiento multi-tenant en platos e ingredientes | 13-17 | 1 | completada |
 | 4 | Autenticación | 18-23 | 1 | pendiente |
 | 5 | Integridad de datos | 24-28 | 2 | pendiente |
 | 6 | Configuración y registro de eventos | 29-31 | 1 | pendiente |
@@ -204,7 +204,7 @@ Cada tarea dura entre 5 y 10 minutos y tiene un resultado comprobable. Los coman
   - Archivo(s): `packages/api/src/repositories/ingredient.repository.ts`, `packages/api/src/services/ingredient.service.ts`, `repositories/mocks`
   - Qué hacer: mismo patrón que la tarea 15 para las operaciones por id de ingredientes.
   - Hecho cuando: un ingrediente de otro restaurante no se puede leer ni modificar por id.
-- [ ] **17. Tests de aislamiento entre restaurantes** (10 min) — modelo: sonnet
+- [x] **17. Tests de aislamiento entre restaurantes** (10 min) — modelo: sonnet
   - Archivo(s): `repositories/dish.repository.test.ts`, `repositories/ingredient.repository.test.ts`, tests de servicios
   - Qué hacer: con SQLite en memoria, insertar primero los restaurantes padre y comprobar que las consultas por id con otro `restaurantId` no devuelven ni modifican nada.
   - Hecho cuando: los tests pasan.

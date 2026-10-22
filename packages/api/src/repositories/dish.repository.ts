@@ -54,12 +54,15 @@ export class SqliteDishRepository implements DishRepository {
     }
 
     async save(dish: Dish): Promise<void> {
-        const existing = await this.db.get<{ id: string }>('SELECT id FROM dishes WHERE id = ?', [dish.id])
+        const existing = await this.db.get<{ id: string }>(
+            'SELECT id FROM dishes WHERE id = ? AND restaurant_id = ?',
+            [dish.id, dish.restaurantId]
+        )
 
         if (existing) {
             await this.db.run(
-                'UPDATE dishes SET name = ?, description = ?, price = ?, category = ?, available = ?, updated_at = ? WHERE id = ?',
-                [dish.name, dish.description, dish.price, dish.category, dish.available ? 1 : 0, dish.updatedAt, dish.id]
+                'UPDATE dishes SET name = ?, description = ?, price = ?, category = ?, available = ?, updated_at = ? WHERE id = ? AND restaurant_id = ?',
+                [dish.name, dish.description, dish.price, dish.category, dish.available ? 1 : 0, dish.updatedAt, dish.id, dish.restaurantId]
             )
         } else {
             await this.db.run(
