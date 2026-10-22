@@ -196,7 +196,7 @@ Cada tarea dura entre 5 y 10 minutos y tiene un resultado comprobable. Los coman
   - Archivo(s): `packages/api/src/routes/dish.routes.ts`, `packages/api/src/routes/ingredient.routes.ts`
   - Qué hacer: añadir `requireSameRestaurant` tras `authenticate` en todas las rutas bajo `/restaurants/:restaurantId/...`.
   - Hecho cuando: `gerente1` recibe 403 en `GET /restaurants/rest-2/ingredients`.
-- [ ] **15. Filtrar platos por restaurante en repositorio y servicio** (10 min) — modelo: sonnet
+- [x] **15. Filtrar platos por restaurante en repositorio y servicio** (10 min) — modelo: sonnet
   - Archivo(s): `packages/api/src/repositories/dish.repository.ts`, `packages/api/src/services/dish.service.ts`, `repositories/mocks`
   - Qué hacer: `findById`, `update` y `delete` reciben `restaurantId` y usan `WHERE id = ? AND restaurant_id = ?`. Un plato de otro restaurante responde 404. Actualizar mocks y controlador.
   - Hecho cuando: `DELETE /restaurants/rest-1/dishes/<id de rest-2>` devuelve 404 y el plato sigue existiendo.

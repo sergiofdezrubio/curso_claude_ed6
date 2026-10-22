@@ -45,8 +45,8 @@ export class DishService {
         return dish
     }
 
-    async update(id: string, input: UpdateDishInput): Promise<Dish> {
-        const existing = await this.dishRepository.findById(id)
+    async update(id: string, restaurantId: string, input: UpdateDishInput): Promise<Dish> {
+        const existing = await this.dishRepository.findById(id, restaurantId)
         if (!existing) {
             throw new DishNotFoundError()
         }
@@ -69,16 +69,16 @@ export class DishService {
         return updated
     }
 
-    async delete(id: string): Promise<void> {
-        const dish = await this.dishRepository.findById(id)
+    async delete(id: string, restaurantId: string): Promise<void> {
+        const dish = await this.dishRepository.findById(id, restaurantId)
         if (!dish) {
             throw new DishNotFoundError()
         }
-        await this.dishRepository.delete(id)
+        await this.dishRepository.delete(id, restaurantId)
     }
 
-    async findById(id: string): Promise<Dish | null> {
-        return this.dishRepository.findById(id)
+    async findById(id: string, restaurantId: string): Promise<Dish | null> {
+        return this.dishRepository.findById(id, restaurantId)
     }
 
     async findByRestaurantId(restaurantId: string): Promise<Dish[]> {
