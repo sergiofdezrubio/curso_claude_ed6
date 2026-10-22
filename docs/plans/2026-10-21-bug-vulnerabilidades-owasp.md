@@ -13,7 +13,7 @@ Esta tabla y las casillas de las tareas son la fuente de verdad del progreso. Un
 
 | Fase | Título | Tareas | Depende de | Estado |
 | ---- | ------ | ------ | ---------- | ------ |
-| 1 | Secreto JWT | 1-3 | — | pendiente |
+| 1 | Secreto JWT | 1-3 | — | en curso |
 | 2 | Pedidos | 4-12 | 1 | pendiente |
 | 3 | Aislamiento multi-tenant en platos e ingredientes | 13-17 | 1 | pendiente |
 | 4 | Autenticación | 18-23 | 1 | pendiente |
@@ -134,7 +134,7 @@ Cada tarea dura entre 5 y 10 minutos y tiene un resultado comprobable. Los coman
 
 ### Fase 1 — Secreto JWT (`API-H3`, `API-H11`)
 
-- [ ] **1. Crear el módulo de entorno** (10 min) — modelo: sonnet
+- [x] **1. Crear el módulo de entorno** (10 min) — modelo: sonnet
   - Archivo(s): `packages/api/src/config/env.ts` (nuevo), `packages/api/tsconfig.json` (alias `@config` ya existe)
   - Qué hacer: importar `dotenv/config`, exportar `JWT_SECRET`. Si `NODE_ENV` no es `test` ni `development` y el secreto falta o tiene menos de 32 caracteres, lanzar un `Error` en español al cargar. En `test` y `development` usar un valor fijo de desarrollo.
   - Hecho cuando: `NODE_ENV=production npx tsx -e "import('./src/config/env.ts')"` falla con el mensaje, y con un secreto válido no.
