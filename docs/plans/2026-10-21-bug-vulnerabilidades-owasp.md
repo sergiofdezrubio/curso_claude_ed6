@@ -192,7 +192,7 @@ Cada tarea dura entre 5 y 10 minutos y tiene un resultado comprobable. Los coman
   - Archivo(s): `contexts/shared/infrastructure/http/middlewares.ts` (más su test)
   - Qué hacer: deja pasar al admin y, para el resto, exige `req.params.restaurantId === req.user.restaurantId`; si no, 403 con mensaje en español.
   - Hecho cuando: tests del middleware con admin, mismo restaurante, otro restaurante y usuario sin restaurante.
-- [ ] **14. Aplicar el middleware a las rutas anidadas** (5 min) — modelo: haiku
+- [x] **14. Aplicar el middleware a las rutas anidadas** (5 min) — modelo: haiku
   - Archivo(s): `packages/api/src/routes/dish.routes.ts`, `packages/api/src/routes/ingredient.routes.ts`
   - Qué hacer: añadir `requireSameRestaurant` tras `authenticate` en todas las rutas bajo `/restaurants/:restaurantId/...`.
   - Hecho cuando: `gerente1` recibe 403 en `GET /restaurants/rest-2/ingredients`.
