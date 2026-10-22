@@ -162,3 +162,9 @@ export class OrderNotFoundError extends AppError {
   }
 }
 
+
+export class InvalidOrderItemsError extends AppError {
+  constructor(message?: string) {
+    super(message ?? 'Líneas de pedido no válidas')
+  }
+}

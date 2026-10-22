@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach } from 'vitest'
 import { OrderService } from './order.service.js'
 import { MockOrderRepository } from '@repositories/mocks/MockOrderRepository.js'
 import type { Order } from '@models/order.model.js'
-import { OrderNotFoundError, InvalidOrderStatusError } from '@errors/DomainErrors.js'
+import { OrderNotFoundError, InvalidOrderStatusError, InvalidOrderItemsError } from '@errors/DomainErrors.js'
 
 describe('OrderService.updateItemStatus', () => {
     let repo: MockOrderRepository
@@ -45,5 +45,27 @@ describe('OrderService.updateItemStatus', () => {
     it('should throw DomainError if status is invalid', async () => {
         await expect(service.updateItemStatus('order-1', 'item-1', 'invalid-status'))
             .rejects.toThrow(InvalidOrderStatusError)
+    })
+})
+
+describe('OrderService.create (validación de items)', () => {
+    let repo: MockOrderRepository
+    let service: OrderService
+
+    const crear = (quantity: unknown) => service.create({
+        restaurantId: 'rest-1',
+        tableId: null,
+        clientId: null,
+        items: [{ dishId: 'dish-1', quantity: quantity as number, notes: null }]
+    })
+
+    beforeEach(() => {
+        repo = new MockOrderRepository()
+        service = new OrderService(repo)
+    })
+
+    it.each([100000000, '5', 0])('debe rechazar quantity %j sin generar líneas', async (quantity) => {
+        await expect(crear(quantity)).rejects.toThrow(InvalidOrderItemsError)
+        expect(repo.orders).toHaveLength(0)
     })
 })

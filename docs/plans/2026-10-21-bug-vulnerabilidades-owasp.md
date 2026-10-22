@@ -14,7 +14,7 @@ Esta tabla y las casillas de las tareas son la fuente de verdad del progreso. Un
 | Fase | Título | Tareas | Depende de | Estado |
 | ---- | ------ | ------ | ---------- | ------ |
 | 1 | Secreto JWT | 1-3 | — | completada |
-| 2 | Pedidos | 4-12 | 1 | pendiente |
+| 2 | Pedidos | 4-12 | 1 | en curso |
 | 3 | Aislamiento multi-tenant en platos e ingredientes | 13-17 | 1 | pendiente |
 | 4 | Autenticación | 18-23 | 1 | pendiente |
 | 5 | Integridad de datos | 24-28 | 2 | pendiente |
@@ -149,7 +149,7 @@ Cada tarea dura entre 5 y 10 minutos y tiene un resultado comprobable. Los coman
 
 ### Fase 2 — Pedidos (`API-H4`, `API-H1`, `API-H15`)
 
-- [ ] **4. Validar `items` y `quantity`** (8 min) — modelo: sonnet
+- [x] **4. Validar `items` y `quantity`** (8 min) — modelo: sonnet
   - Archivo(s): `packages/api/src/services/order.service.ts`
   - Qué hacer: exigir que `items` sea un array de 1 a 30 elementos, que `quantity` cumpla `Number.isInteger` y esté entre 1 y 50, y que `dishId` sea un string no vacío. Lanzar el error de validación existente con mensajes en español.
   - Hecho cuando: crear un pedido con `quantity` 100000000, `"5"` o 0 devuelve 400 sin bloquear el proceso.

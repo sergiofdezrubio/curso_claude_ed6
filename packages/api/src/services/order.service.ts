@@ -2,7 +2,7 @@ import { randomUUID } from 'crypto'
 import type { Order, OrderItem } from '@models/order.model.js'
 import { normalizeOrderStatus } from '@models/order.model.js'
 import type { OrderRepository } from '@repositories/order.repository.js'
-import { RestaurantIdRequiredError, OrderNotFoundError } from '@errors/DomainErrors.js'
+import { RestaurantIdRequiredError, OrderNotFoundError, InvalidOrderItemsError } from '@errors/DomainErrors.js'
 
 export interface CreateOrderRequest {
     restaurantId: string
@@ -15,6 +15,24 @@ export interface CreateOrderRequest {
     }[]
 }
 
+const MAX_LINEAS_PEDIDO = 30
+const MAX_CANTIDAD_POR_LINEA = 50
+
+function validarItems(items: unknown): void {
+    if (!Array.isArray(items) || items.length < 1 || items.length > MAX_LINEAS_PEDIDO) {
+        throw new InvalidOrderItemsError(`El pedido debe tener entre 1 y ${MAX_LINEAS_PEDIDO} líneas`)
+    }
+    for (const item of items) {
+        if (typeof item?.dishId !== 'string' || item.dishId.trim() === '') {
+            throw new InvalidOrderItemsError('El identificador del plato es obligatorio')
+        }
+        const { quantity } = item
+        if (!Number.isInteger(quantity) || quantity < 1 || quantity > MAX_CANTIDAD_POR_LINEA) {
+            throw new InvalidOrderItemsError(`La cantidad debe ser un entero entre 1 y ${MAX_CANTIDAD_POR_LINEA}`)
+        }
+    }
+}
+
 export class OrderService {
     constructor(private readonly orderRepository: OrderRepository) {}
 
@@ -22,6 +40,8 @@ export class OrderService {
         if (!request.restaurantId || request.restaurantId.trim() === '') {
             throw new RestaurantIdRequiredError()
         }
+
+        validarItems(request.items)
 
         const items: OrderItem[] = []
         for (const item of request.items) {
