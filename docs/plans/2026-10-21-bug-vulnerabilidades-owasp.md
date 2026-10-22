@@ -165,7 +165,7 @@ Cada tarea dura entre 5 y 10 minutos y tiene un resultado comprobable. Los coman
   - Archivo(s): `packages/api/src/services/order.service.ts`
   - Qué hacer: los métodos de lectura, creación y cambio de estado reciben `AuthUser`. El admin ve todo, el personal solo su `restaurantId` y el cliente solo sus pedidos. En `create`, el personal solo puede crear en su restaurante. Lanzar un error de dominio mapeado a 403 (o 404 para no revelar la existencia del pedido).
   - Hecho cuando: un usuario de otro restaurante no puede obtener ni modificar un pedido (cubierto en la tarea 11).
-- [ ] **8. Transiciones de estado por rol** (10 min) — modelo: opus
+- [x] **8. Transiciones de estado por rol** (10 min) — modelo: opus
   - Archivo(s): `packages/api/src/services/order.service.ts`
   - Qué hacer: en `updateItemStatus`, validar la transición pedida contra la matriz de la tarea 6 y el rol del usuario. Rechazar con 403 las no permitidas y con 400 las no válidas.
   - Hecho cuando: un cocinero no puede marcar `entregado` y un camarero no puede marcar `preparando`.

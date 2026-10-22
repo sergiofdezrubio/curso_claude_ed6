@@ -181,3 +181,41 @@ describe('OrderService (pertenencia)', () => {
         expect(order.clientId).toBe('cli-1')
     })
 })
+
+describe('OrderService.updateItemStatus (transiciones por rol)', () => {
+    let repo: MockOrderRepository
+    let service: OrderService
+
+    const cocinero: AuthUser = { id: 'coc-1', role: 'cocinero', restaurantId: 'rest-1' }
+    const camarero: AuthUser = { id: 'cam-1', role: 'camarero', restaurantId: 'rest-1' }
+
+    beforeEach(async () => {
+        repo = new MockOrderRepository()
+        service = new OrderService(repo)
+        await repo.create({
+            id: 'order-1',
+            restaurantId: 'rest-1',
+            tableId: null,
+            clientId: null,
+            createdAt: new Date(),
+            items: [{ id: 'item-1', dishId: 'dish-1', quantity: 1, notes: null, status: 'listo' }]
+        })
+    })
+
+    it('un cocinero no puede marcar un item como entregado', async () => {
+        await expect(service.updateItemStatus('order-1', 'item-1', 'entregado', cocinero))
+            .rejects.toThrow(ForbiddenActionError)
+        expect(repo.orders[0]!.items[0]!.status).toBe('listo')
+    })
+
+    it('un camarero no puede marcar un item como preparando', async () => {
+        await expect(service.updateItemStatus('order-1', 'item-1', 'preparando', camarero))
+            .rejects.toThrow(ForbiddenActionError)
+        expect(repo.orders[0]!.items[0]!.status).toBe('listo')
+    })
+
+    it('un camarero puede marcar como entregado un item listo', async () => {
+        await service.updateItemStatus('order-1', 'item-1', 'entregado', camarero)
+        expect(repo.orders[0]!.items[0]!.status).toBe('entregado')
+    })
+})

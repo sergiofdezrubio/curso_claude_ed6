@@ -1,6 +1,6 @@
 import { randomUUID } from 'crypto'
 import type { Order, OrderItem } from '@models/order.model.js'
-import { normalizeOrderStatus } from '@models/order.model.js'
+import { normalizeOrderStatus, puedeTransicionar } from '@models/order.model.js'
 import type { OrderRepository } from '@repositories/order.repository.js'
 import type { AuthUser } from '@shared/infrastructure/http/middlewares.js'
 import { RestaurantIdRequiredError, OrderNotFoundError, InvalidOrderItemsError, ForbiddenActionError } from '@errors/DomainErrors.js'
@@ -109,12 +109,18 @@ export class OrderService {
     async updateItemStatus(orderId: string, itemId: string, status: string, user: AuthUser): Promise<void> {
         const order = await this.buscarPedidoAccesible(orderId, user)
 
+        // Orden: pedido accesible (404) → estado válido (400) → línea existe (404) → transición permitida (403)
+        const normalizedStatus = normalizeOrderStatus(status)
+
         const item = order.items.find(i => i.id === itemId)
         if (!item) {
             throw new OrderNotFoundError() // Or ItemNotFoundError
         }
 
-        const normalizedStatus = normalizeOrderStatus(status)
+        if (!puedeTransicionar(user.role, item.status, normalizedStatus)) {
+            throw new ForbiddenActionError()
+        }
+
         item.status = normalizedStatus
 
         await this.orderRepository.updateItemStatus(orderId, itemId, normalizedStatus)
