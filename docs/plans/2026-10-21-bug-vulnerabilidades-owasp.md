@@ -14,7 +14,7 @@ Esta tabla y las casillas de las tareas son la fuente de verdad del progreso. Un
 | Fase | Título | Tareas | Depende de | Estado |
 | ---- | ------ | ------ | ---------- | ------ |
 | 1 | Secreto JWT | 1-3 | — | completada |
-| 2 | Pedidos | 4-12 | 1 | en curso |
+| 2 | Pedidos | 4-12 | 1 | completada |
 | 3 | Aislamiento multi-tenant en platos e ingredientes | 13-17 | 1 | pendiente |
 | 4 | Autenticación | 18-23 | 1 | pendiente |
 | 5 | Integridad de datos | 24-28 | 2 | pendiente |
@@ -181,7 +181,7 @@ Cada tarea dura entre 5 y 10 minutos y tiene un resultado comprobable. Los coman
   - Archivo(s): `packages/api/src/services/order.service.test.ts`, mocks en `repositories/mocks`
   - Qué hacer: casos de admin, personal de otro restaurante, cliente dueño y cliente ajeno para lectura, creación y cambio de estado.
   - Hecho cuando: los tests pasan y fallan si se quita la comprobación de pertenencia.
-- [ ] **12. Tests de transiciones por rol** (8 min) — modelo: sonnet
+- [x] **12. Tests de transiciones por rol** (8 min) — modelo: sonnet
   - Archivo(s): `packages/api/src/services/order.service.test.ts`
   - Qué hacer: tabla de casos `rol × transición` con el resultado esperado (permitida, 403 o 400).
   - Hecho cuando: pasan todos los casos de la matriz.

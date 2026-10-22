@@ -401,3 +401,67 @@ describe('OrderService.updateItemStatus (autorización de pertenencia)', () => {
             .rejects.toThrow(OrderNotFoundError)
     })
 })
+
+describe('OrderService.updateItemStatus (matriz rol × transición)', () => {
+    type Estado = OrderItem['status']
+    type Resultado = 'permitida' | 'prohibida'
+
+    const estados: Estado[] = ['pendiente', 'preparando', 'listo', 'entregado']
+
+    // Matriz escrita a mano (no derivada del modelo): transiciones permitidas por rol.
+    const permitidas: Record<AuthUser['role'], string[]> = {
+        admin: estados.flatMap(d => estados.filter(h => h !== d).map(h => `${d}>${h}`)),
+        manager: estados.flatMap(d => estados.filter(h => h !== d).map(h => `${d}>${h}`)),
+        cocinero: ['pendiente>preparando', 'preparando>listo'],
+        camarero: ['listo>entregado'],
+        cliente: []
+    }
+
+    const roles = Object.keys(permitidas) as AuthUser['role'][]
+    const casos = roles.flatMap(rol => estados.flatMap(desde => estados.map(hasta => ({
+        rol,
+        desde,
+        hasta,
+        esperado: (permitidas[rol].includes(`${desde}>${hasta}`) ? 'permitida' : 'prohibida') as Resultado
+    }))))
+
+    const preparar = async (desde: Estado): Promise<{ repo: MockOrderRepository, service: OrderService }> => {
+        const repo = new MockOrderRepository()
+        // El cliente es dueño del pedido para que llegue a la comprobación de la transición.
+        await repo.create(pedido('p-1', 'rest-1', 'user-1', desde))
+        return { repo, service: new OrderService(repo) }
+    }
+
+    it.each(casos)('$rol: $desde → $hasta es $esperado', async ({ rol, desde, hasta, esperado }) => {
+        const { repo, service } = await preparar(desde)
+        const user = usuario(rol, rol === 'admin' || rol === 'cliente' ? null : 'rest-1', 'user-1')
+        const llamada = service.updateItemStatus('p-1', 'p-1-item', hasta, user)
+
+        if (esperado === 'permitida') {
+            await expect(llamada).resolves.toBeUndefined()
+            expect(repo.orders[0]!.items[0]!.status).toBe(hasta)
+        } else {
+            await expect(llamada).rejects.toThrow(ForbiddenActionError)
+            expect(repo.orders[0]!.items[0]!.status).toBe(desde)
+        }
+    })
+
+    it.each(roles)('%s: un estado inexistente da InvalidOrderStatusError (400)', async (rol) => {
+        const { repo, service } = await preparar('pendiente')
+        const user = usuario(rol, rol === 'admin' || rol === 'cliente' ? null : 'rest-1', 'user-1')
+        await expect(service.updateItemStatus('p-1', 'p-1-item', 'cancelado', user))
+            .rejects.toThrow(InvalidOrderStatusError)
+        expect(repo.orders[0]!.items[0]!.status).toBe('pendiente')
+    })
+
+    it.each([
+        ['cocinero', 'pendiente', 'listo'],
+        ['cocinero', 'listo', 'preparando'],
+        ['camarero', 'pendiente', 'entregado'],
+        ['camarero', 'entregado', 'listo']
+    ] as const)('%s no puede saltar pasos ni retroceder (%s → %s)', async (rol, desde, hasta) => {
+        const { service } = await preparar(desde)
+        await expect(service.updateItemStatus('p-1', 'p-1-item', hasta, usuario(rol, 'rest-1')))
+            .rejects.toThrow(ForbiddenActionError)
+    })
+})
