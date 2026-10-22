@@ -13,7 +13,7 @@ Esta tabla y las casillas de las tareas son la fuente de verdad del progreso. Un
 
 | Fase | Título | Tareas | Depende de | Estado |
 | ---- | ------ | ------ | ---------- | ------ |
-| 1 | Secreto JWT | 1-3 | — | en curso |
+| 1 | Secreto JWT | 1-3 | — | completada |
 | 2 | Pedidos | 4-12 | 1 | pendiente |
 | 3 | Aislamiento multi-tenant en platos e ingredientes | 13-17 | 1 | pendiente |
 | 4 | Autenticación | 18-23 | 1 | pendiente |
@@ -142,7 +142,7 @@ Cada tarea dura entre 5 y 10 minutos y tiene un resultado comprobable. Los coman
   - Archivo(s): `contexts/shared/infrastructure/http/middlewares.ts`, `contexts/employee/infrastructure/BcryptAuthService.ts`
   - Qué hacer: sustituir `process.env.JWT_SECRET || '...'` por el import de `@config/env.js`. Añadir `{ algorithms: ['HS256'] }` en `jwt.verify` y `{ algorithm: 'HS256' }` en `sign`. Subir `SALT_ROUNDS` a 12.
   - Hecho cuando: `grep -rn "super-secret-resttek-key" packages/api/src` solo aparece en `config/env.ts`.
-- [ ] **3. Test del módulo de entorno** (8 min) — modelo: sonnet
+- [x] **3. Test del módulo de entorno** (8 min) — modelo: sonnet
   - Archivo(s): `packages/api/src/config/env.test.ts` (nuevo), `packages/api/vitest.config.ts`
   - Qué hacer: tests con `vi.resetModules()` que comprueban el fallo en producción sin secreto o con secreto corto y el éxito con uno válido. Fijar `NODE_ENV=test` en la config de vitest si no estuviera.
   - Hecho cuando: `npm test` pasa en verde.
