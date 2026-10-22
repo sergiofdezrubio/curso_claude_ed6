@@ -227,7 +227,7 @@ Cada tarea dura entre 5 y 10 minutos y tiene un resultado comprobable. Los coman
   - Archivo(s): `contexts/employee/application/LoginUseCase.ts` y su test
   - Qué hacer: si el email no existe, ejecutar igualmente `compare` contra un hash ficticio precalculado y devolver el mismo error genérico.
   - Hecho cuando: el test confirma que se llama a `compare` en ambos caminos.
-- [ ] **22. Normalizar el email** (5 min) — modelo: haiku
+- [x] **22. Normalizar el email** (5 min) — modelo: haiku
   - Archivo(s): `contexts/shared/domain/value-objects/Email.ts`
   - Qué hacer: aplicar `trim().toLowerCase()` antes de validar y guardar.
   - Hecho cuando: `Email.create('Admin@Resttek.com').value` devuelve `admin@resttek.com`.
