@@ -177,7 +177,7 @@ Cada tarea dura entre 5 y 10 minutos y tiene un resultado comprobable. Los coman
   - Archivo(s): `packages/api/src/routes/order.routes.ts`
   - Qué hacer: `authorize(['admin','manager','camarero','cocinero'])` en `GET /active` y en `PATCH /:orderId/items/:itemId/status`. Dejar `POST /` y `GET /:id` autenticados, con la pertenencia resuelta en el servicio.
   - Hecho cuando: un token de `cliente` recibe 403 en `/orders/active`.
-- [ ] **11. Tests de autorización de pedidos** (10 min) — modelo: sonnet
+- [x] **11. Tests de autorización de pedidos** (10 min) — modelo: sonnet
   - Archivo(s): `packages/api/src/services/order.service.test.ts`, mocks en `repositories/mocks`
   - Qué hacer: casos de admin, personal de otro restaurante, cliente dueño y cliente ajeno para lectura, creación y cambio de estado.
   - Hecho cuando: los tests pasan y fallan si se quita la comprobación de pertenencia.

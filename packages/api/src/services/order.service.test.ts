@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach } from 'vitest'
 import { OrderService } from './order.service.js'
 import { MockOrderRepository } from '@repositories/mocks/MockOrderRepository.js'
-import type { Order } from '@models/order.model.js'
+import type { Order, OrderItem } from '@models/order.model.js'
 import { OrderNotFoundError, InvalidOrderStatusError, InvalidOrderItemsError, ForbiddenActionError } from '@errors/DomainErrors.js'
 import type { AuthUser } from '@shared/infrastructure/http/middlewares.js'
 
@@ -217,5 +217,187 @@ describe('OrderService.updateItemStatus (transiciones por rol)', () => {
     it('un camarero puede marcar como entregado un item listo', async () => {
         await service.updateItemStatus('order-1', 'item-1', 'entregado', camarero)
         expect(repo.orders[0]!.items[0]!.status).toBe('entregado')
+    })
+})
+
+const usuario = (role: AuthUser['role'], restaurantId: string | null, id = `${role}-${restaurantId ?? 'sin'}`): AuthUser =>
+    ({ id, role, restaurantId })
+
+const pedido = (id: string, restaurantId: string, clientId: string | null, estado: OrderItem['status'] = 'pendiente'): Order => ({
+    id,
+    restaurantId,
+    tableId: null,
+    clientId,
+    createdAt: new Date(),
+    items: [{ id: `${id}-item`, dishId: 'dish-1', quantity: 1, notes: null, status: estado }]
+})
+
+describe('OrderService (autorización de lectura)', () => {
+    let repo: MockOrderRepository
+    let service: OrderService
+
+    const personal = ['manager', 'camarero', 'cocinero'] as const
+    const dueno = usuario('cliente', null, 'cli-1')
+    const clienteAjeno = usuario('cliente', null, 'cli-2')
+
+    beforeEach(async () => {
+        repo = new MockOrderRepository()
+        service = new OrderService(repo)
+        await repo.create(pedido('p-r1', 'rest-1', 'cli-1'))
+        await repo.create(pedido('p-r2', 'rest-2', 'cli-2'))
+    })
+
+    describe('getById', () => {
+        it('admin accede a pedidos de cualquier restaurante', async () => {
+            expect((await service.getById('p-r1', admin)).id).toBe('p-r1')
+            expect((await service.getById('p-r2', admin)).id).toBe('p-r2')
+        })
+
+        it.each(personal)('%s del mismo restaurante accede al pedido', async (rol) => {
+            expect((await service.getById('p-r1', usuario(rol, 'rest-1'))).id).toBe('p-r1')
+        })
+
+        it.each(personal)('%s de otro restaurante recibe OrderNotFoundError', async (rol) => {
+            await expect(service.getById('p-r1', usuario(rol, 'rest-2'))).rejects.toThrow(OrderNotFoundError)
+        })
+
+        it.each(personal)('%s sin restaurante (null) no accede a nada', async (rol) => {
+            await expect(service.getById('p-r1', usuario(rol, null))).rejects.toThrow(OrderNotFoundError)
+        })
+
+        it('el cliente dueño accede a su pedido', async () => {
+            expect((await service.getById('p-r1', dueno)).id).toBe('p-r1')
+        })
+
+        it('un cliente ajeno recibe OrderNotFoundError', async () => {
+            await expect(service.getById('p-r1', clienteAjeno)).rejects.toThrow(OrderNotFoundError)
+        })
+
+        it('un pedido inexistente y uno ajeno dan el mismo error', async () => {
+            await expect(service.getById('no-existe', clienteAjeno)).rejects.toThrow(OrderNotFoundError)
+        })
+    })
+
+    describe('listActive', () => {
+        it('admin lista los activos de cualquier restaurante', async () => {
+            expect((await service.listActive('rest-1', admin)).map(o => o.id)).toEqual(['p-r1'])
+            expect((await service.listActive('rest-2', admin)).map(o => o.id)).toEqual(['p-r2'])
+        })
+
+        it.each(personal)('%s lista los activos de su restaurante', async (rol) => {
+            expect((await service.listActive('rest-1', usuario(rol, 'rest-1'))).map(o => o.id)).toEqual(['p-r1'])
+        })
+
+        it.each(personal)('%s no lista los activos de otro restaurante', async (rol) => {
+            await expect(service.listActive('rest-1', usuario(rol, 'rest-2'))).rejects.toThrow(ForbiddenActionError)
+        })
+
+        it.each(personal)('%s sin restaurante (null) no lista nada', async (rol) => {
+            await expect(service.listActive('rest-1', usuario(rol, null))).rejects.toThrow(ForbiddenActionError)
+        })
+
+        it('un cliente no puede listar los activos', async () => {
+            await expect(service.listActive('rest-1', dueno)).rejects.toThrow(ForbiddenActionError)
+        })
+    })
+
+    describe('listMine', () => {
+        it('el cliente solo ve sus propios pedidos', async () => {
+            expect((await service.listMine(dueno)).map(o => o.id)).toEqual(['p-r1'])
+            expect((await service.listMine(clienteAjeno)).map(o => o.id)).toEqual(['p-r2'])
+        })
+
+        it('un cliente sin pedidos recibe una lista vacía', async () => {
+            expect(await service.listMine(usuario('cliente', null, 'cli-3'))).toEqual([])
+        })
+    })
+})
+
+describe('OrderService.create (autorización)', () => {
+    let repo: MockOrderRepository
+    let service: OrderService
+
+    const peticion = (restaurantId: string) => ({
+        restaurantId,
+        tableId: null,
+        items: [{ dishId: 'dish-1', quantity: 1, notes: null }]
+    })
+
+    beforeEach(() => {
+        repo = new MockOrderRepository()
+        service = new OrderService(repo)
+    })
+
+    it('admin crea en cualquier restaurante con su propio id como clientId', async () => {
+        const order = await service.create(peticion('rest-9'), admin)
+        expect(order.clientId).toBe('admin-1')
+    })
+
+    it.each(['manager', 'camarero', 'cocinero'] as const)('%s crea en su restaurante con su id como clientId', async (rol) => {
+        const user = usuario(rol, 'rest-1', `${rol}-id`)
+        const order = await service.create(peticion('rest-1'), user)
+        expect(order.clientId).toBe(`${rol}-id`)
+    })
+
+    it.each(['manager', 'camarero', 'cocinero'] as const)('%s no crea en otro restaurante', async (rol) => {
+        await expect(service.create(peticion('rest-1'), usuario(rol, 'rest-2'))).rejects.toThrow(ForbiddenActionError)
+        expect(repo.orders).toHaveLength(0)
+    })
+
+    it.each(['manager', 'camarero', 'cocinero'] as const)('%s sin restaurante (null) no crea pedidos', async (rol) => {
+        await expect(service.create(peticion('rest-1'), usuario(rol, null))).rejects.toThrow(ForbiddenActionError)
+        expect(repo.orders).toHaveLength(0)
+    })
+
+    it('un cliente crea en cualquier restaurante y el clientId es el suyo', async () => {
+        const order = await service.create({ ...peticion('rest-7'), clientId: 'suplantado' } as never, usuario('cliente', null, 'cli-1'))
+        expect(order.clientId).toBe('cli-1')
+        expect(repo.orders[0]!.clientId).toBe('cli-1')
+    })
+})
+
+describe('OrderService.updateItemStatus (autorización de pertenencia)', () => {
+    let repo: MockOrderRepository
+    let service: OrderService
+
+    beforeEach(async () => {
+        repo = new MockOrderRepository()
+        service = new OrderService(repo)
+        await repo.create(pedido('p-r1', 'rest-1', 'cli-1'))
+    })
+
+    const estado = () => repo.orders[0]!.items[0]!.status
+
+    it('admin cambia el estado en cualquier restaurante', async () => {
+        await service.updateItemStatus('p-r1', 'p-r1-item', 'entregado', admin)
+        expect(estado()).toBe('entregado')
+    })
+
+    it('el cocinero del mismo restaurante cambia el estado', async () => {
+        await service.updateItemStatus('p-r1', 'p-r1-item', 'preparando', usuario('cocinero', 'rest-1'))
+        expect(estado()).toBe('preparando')
+    })
+
+    it.each(['manager', 'camarero', 'cocinero'] as const)('%s de otro restaurante recibe OrderNotFoundError y no modifica nada', async (rol) => {
+        await expect(service.updateItemStatus('p-r1', 'p-r1-item', 'preparando', usuario(rol, 'rest-2')))
+            .rejects.toThrow(OrderNotFoundError)
+        expect(estado()).toBe('pendiente')
+    })
+
+    it.each(['manager', 'camarero', 'cocinero'] as const)('%s sin restaurante (null) recibe OrderNotFoundError', async (rol) => {
+        await expect(service.updateItemStatus('p-r1', 'p-r1-item', 'preparando', usuario(rol, null)))
+            .rejects.toThrow(OrderNotFoundError)
+        expect(estado()).toBe('pendiente')
+    })
+
+    it('un cliente dueño del pedido no puede cambiar el estado (403)', async () => {
+        await expect(service.updateItemStatus('p-r1', 'p-r1-item', 'preparando', usuario('cliente', null, 'cli-1')))
+            .rejects.toThrow(ForbiddenActionError)
+        expect(estado()).toBe('pendiente')
+    })
+
+    it('un cliente ajeno recibe OrderNotFoundError', async () => {
+        await expect(service.updateItemStatus('p-r1', 'p-r1-item', 'preparando', usuario('cliente', null, 'cli-2')))
+            .rejects.toThrow(OrderNotFoundError)
     })
 })
