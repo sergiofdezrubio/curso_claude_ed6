@@ -14,7 +14,7 @@ Esta tabla y las casillas de las tareas son la fuente de verdad del progreso. Un
 | Fase | Título | Tareas | Depende de | Estado |
 | ---- | ------ | ------ | ---------- | ------ |
 | 1 | Secreto JWT | 1-3 | — | completada |
-| 2 | Pedidos | 4-12 | 1 | pendiente |
+| 2 | Pedidos | 4-12 | 1 | completada |
 | 3 | Aislamiento multi-tenant en platos e ingredientes | 13-17 | 1 | pendiente |
 | 4 | Autenticación | 18-23 | 1 | pendiente |
 | 5 | Integridad de datos | 24-28 | 2 | pendiente |
@@ -149,39 +149,39 @@ Cada tarea dura entre 5 y 10 minutos y tiene un resultado comprobable. Los coman
 
 ### Fase 2 — Pedidos (`API-H4`, `API-H1`, `API-H15`)
 
-- [ ] **4. Validar `items` y `quantity`** (8 min) — modelo: sonnet
+- [x] **4. Validar `items` y `quantity`** (8 min) — modelo: sonnet
   - Archivo(s): `packages/api/src/services/order.service.ts`
   - Qué hacer: exigir que `items` sea un array de 1 a 30 elementos, que `quantity` cumpla `Number.isInteger` y esté entre 1 y 50, y que `dishId` sea un string no vacío. Lanzar el error de validación existente con mensajes en español.
   - Hecho cuando: crear un pedido con `quantity` 100000000, `"5"` o 0 devuelve 400 sin bloquear el proceso.
-- [ ] **5. Tests de la validación de pedidos** (7 min) — modelo: sonnet
+- [x] **5. Tests de la validación de pedidos** (7 min) — modelo: sonnet
   - Archivo(s): `packages/api/src/services/order.service.test.ts`
   - Qué hacer: casos para `items` vacío, `quantity` fuera de rango, string o decimal, demasiadas líneas y un pedido válido.
   - Hecho cuando: `npx vitest run src/services/order.service.test.ts` pasa.
-- [ ] **6. Diseñar el contexto de usuario y la matriz de permisos de pedidos** (10 min) — modelo: opus
+- [x] **6. Diseñar el contexto de usuario y la matriz de permisos de pedidos** (10 min) — modelo: opus
   - Archivo(s): `contexts/shared/infrastructure/http/middlewares.ts`, `src/models/order.model.ts`
   - Qué hacer: tipar `AuthUser` (`id`, `role`, `restaurantId`) y definir en el modelo la matriz `rol → transiciones permitidas` según los estados reales de `order.model.ts`. Confirmar que `req.user` ya contiene `restaurantId`.
   - Hecho cuando: existe el tipo y la matriz exportados, y `tsc --noEmit` compila.
-- [ ] **7. Control de pertenencia en `OrderService`** (10 min) — modelo: opus
+- [x] **7. Control de pertenencia en `OrderService`** (10 min) — modelo: opus
   - Archivo(s): `packages/api/src/services/order.service.ts`
   - Qué hacer: los métodos de lectura, creación y cambio de estado reciben `AuthUser`. El admin ve todo, el personal solo su `restaurantId` y el cliente solo sus pedidos. En `create`, el personal solo puede crear en su restaurante. Lanzar un error de dominio mapeado a 403 (o 404 para no revelar la existencia del pedido).
   - Hecho cuando: un usuario de otro restaurante no puede obtener ni modificar un pedido (cubierto en la tarea 11).
-- [ ] **8. Transiciones de estado por rol** (10 min) — modelo: opus
+- [x] **8. Transiciones de estado por rol** (10 min) — modelo: opus
   - Archivo(s): `packages/api/src/services/order.service.ts`
   - Qué hacer: en `updateItemStatus`, validar la transición pedida contra la matriz de la tarea 6 y el rol del usuario. Rechazar con 403 las no permitidas y con 400 las no válidas.
   - Hecho cuando: un cocinero no puede marcar `entregado` y un camarero no puede marcar `preparando`.
-- [ ] **9. Controlador de pedidos: usuario, errores y `restaurantId` del token** (10 min) — modelo: sonnet
+- [x] **9. Controlador de pedidos: usuario, errores y `restaurantId` del token** (10 min) — modelo: sonnet
   - Archivo(s): `packages/api/src/controllers/order.controller.ts`, `contexts/shared/.../errorHandler.ts`
   - Qué hacer: pasar `req.user` al servicio. En `/active` usar el `restaurantId` del token y responder 403 si la query trae otro distinto (salvo admin). Sustituir `res.status(...).json({ error: error.message })` por `next(error)` y añadir `OrderNotFoundError` a `NOT_FOUND_ERRORS` (`API-H15`).
   - Hecho cuando: un error de SQLite o un `TypeError` en pedidos responde 500 genérico, y un pedido inexistente, 404.
-- [ ] **10. Roles en las rutas de pedidos** (5 min) — modelo: haiku
+- [x] **10. Roles en las rutas de pedidos** (5 min) — modelo: haiku
   - Archivo(s): `packages/api/src/routes/order.routes.ts`
   - Qué hacer: `authorize(['admin','manager','camarero','cocinero'])` en `GET /active` y en `PATCH /:orderId/items/:itemId/status`. Dejar `POST /` y `GET /:id` autenticados, con la pertenencia resuelta en el servicio.
   - Hecho cuando: un token de `cliente` recibe 403 en `/orders/active`.
-- [ ] **11. Tests de autorización de pedidos** (10 min) — modelo: sonnet
+- [x] **11. Tests de autorización de pedidos** (10 min) — modelo: sonnet
   - Archivo(s): `packages/api/src/services/order.service.test.ts`, mocks en `repositories/mocks`
   - Qué hacer: casos de admin, personal de otro restaurante, cliente dueño y cliente ajeno para lectura, creación y cambio de estado.
   - Hecho cuando: los tests pasan y fallan si se quita la comprobación de pertenencia.
-- [ ] **12. Tests de transiciones por rol** (8 min) — modelo: sonnet
+- [x] **12. Tests de transiciones por rol** (8 min) — modelo: sonnet
   - Archivo(s): `packages/api/src/services/order.service.test.ts`
   - Qué hacer: tabla de casos `rol × transición` con el resultado esperado (permitida, 403 o 400).
   - Hecho cuando: pasan todos los casos de la matriz.

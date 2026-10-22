@@ -1,4 +1,5 @@
 import { InvalidOrderStatusError } from '@errors/DomainErrors.js'
+import type { EmployeeRoleType } from '@employee/domain/value-objects/Role.js'
 
 const VALID_ORDER_STATUSES = ['pendiente', 'preparando', 'listo', 'entregado'] as const
 
@@ -36,4 +37,34 @@ export function normalizeOrderStatus(value: string): OrderStatusType {
 
 export function isOrderFullyDelivered(order: Order): boolean {
     return order.items.length > 0 && order.items.every(item => item.status === 'entregado')
+}
+
+export interface TransicionEstado {
+    desde: OrderStatusType
+    hasta: OrderStatusType
+}
+
+// Todos los pares de estados válidos distintos: manager y admin pueden avanzar,
+// saltar pasos y retroceder (p. ej. para corregir un error de cocina o de sala).
+const TODAS_LAS_TRANSICIONES: readonly TransicionEstado[] = VALID_ORDER_STATUSES.flatMap(desde =>
+    VALID_ORDER_STATUSES.filter(hasta => hasta !== desde).map(hasta => ({ desde, hasta }))
+)
+
+// Matriz rol → transiciones de estado de un item de pedido permitidas.
+// Pasar al mismo estado no es una transición y no está permitido para ningún rol.
+export const TRANSICIONES_POR_ROL: Readonly<Record<EmployeeRoleType, readonly TransicionEstado[]>> = {
+    admin: TODAS_LAS_TRANSICIONES,
+    manager: TODAS_LAS_TRANSICIONES,
+    cocinero: [
+        { desde: 'pendiente', hasta: 'preparando' },
+        { desde: 'preparando', hasta: 'listo' }
+    ],
+    camarero: [
+        { desde: 'listo', hasta: 'entregado' }
+    ],
+    cliente: []
+}
+
+export function puedeTransicionar(rol: EmployeeRoleType, desde: OrderStatusType, hasta: OrderStatusType): boolean {
+    return TRANSICIONES_POR_ROL[rol].some(t => t.desde === desde && t.hasta === hasta)
 }
