@@ -173,7 +173,7 @@ Cada tarea dura entre 5 y 10 minutos y tiene un resultado comprobable. Los coman
   - Archivo(s): `packages/api/src/controllers/order.controller.ts`, `contexts/shared/.../errorHandler.ts`
   - Qué hacer: pasar `req.user` al servicio. En `/active` usar el `restaurantId` del token y responder 403 si la query trae otro distinto (salvo admin). Sustituir `res.status(...).json({ error: error.message })` por `next(error)` y añadir `OrderNotFoundError` a `NOT_FOUND_ERRORS` (`API-H15`).
   - Hecho cuando: un error de SQLite o un `TypeError` en pedidos responde 500 genérico, y un pedido inexistente, 404.
-- [ ] **10. Roles en las rutas de pedidos** (5 min) — modelo: haiku
+- [x] **10. Roles en las rutas de pedidos** (5 min) — modelo: haiku
   - Archivo(s): `packages/api/src/routes/order.routes.ts`
   - Qué hacer: `authorize(['admin','manager','camarero','cocinero'])` en `GET /active` y en `PATCH /:orderId/items/:itemId/status`. Dejar `POST /` y `GET /:id` autenticados, con la pertenencia resuelta en el servicio.
   - Hecho cuando: un token de `cliente` recibe 403 en `/orders/active`.
