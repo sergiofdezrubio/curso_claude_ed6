@@ -223,7 +223,7 @@ Cada tarea dura entre 5 y 10 minutos y tiene un resultado comprobable. Los coman
   - Archivo(s): `RegisterClientUseCase.ts`, `CreateEmployeeUseCase.ts` y sus tests
   - Qué hacer: validar la contraseña antes de hashear. Un `password` ausente debe dar 400, no 500.
   - Hecho cuando: registrar con `password: ""` devuelve 400.
-- [ ] **21. Login sin diferencia de tiempos** (8 min) — modelo: sonnet
+- [x] **21. Login sin diferencia de tiempos** (8 min) — modelo: sonnet
   - Archivo(s): `contexts/employee/application/LoginUseCase.ts` y su test
   - Qué hacer: si el email no existe, ejecutar igualmente `compare` contra un hash ficticio precalculado y devolver el mismo error genérico.
   - Hecho cuando: el test confirma que se llama a `compare` en ambos caminos.

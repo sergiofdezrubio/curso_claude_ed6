@@ -2,8 +2,8 @@ import { MockEmployeeRepository, MockAuthService } from '@employee/application/m
 import { CreateEmployeeUseCase } from '@employee/application/CreateEmployeeUseCase.js'
 import { LoginUseCase } from '@employee/application/LoginUseCase.js'
 import { Employee } from '@employee/domain/Employee.js'
-import { describe, it, expect, beforeEach } from 'vitest'
-import { InvalidPasswordError } from '@errors/DomainErrors.js'
+import { describe, it, expect, beforeEach, vi } from 'vitest'
+import { InvalidPasswordError, InvalidCredentialsError } from '@errors/DomainErrors.js'
 
 describe('Employee Application Use Cases', () => {
     let employeeRepo: MockEmployeeRepository
@@ -126,6 +126,42 @@ describe('Employee Application Use Cases', () => {
                 email: 'admin@resttek.com',
                 passwordRaw: 'wrongpassword'
             })).rejects.toThrow('Invalid credentials')
+        })
+
+        it('debe ejecutar compare una vez con un hash ficticio si el email no existe', async () => {
+            const spy = vi.spyOn(authService, 'comparePasswords')
+
+            await expect(loginUseCase.execute({
+                email: 'nobody@resttek.com',
+                passwordRaw: 'password123'
+            })).rejects.toThrow('Invalid credentials')
+
+            expect(spy).toHaveBeenCalledTimes(1)
+            const [provided, stored] = spy.mock.calls[0]!
+            expect(provided).toBe('password123')
+            expect(stored).toMatch(/^\$2[aby]\$12\$.{53}$/)
+        })
+
+        it('debe ejecutar compare una vez y lanzar el mismo error con contraseña incorrecta', async () => {
+            await employeeRepo.save(Employee.create({
+                id: '123',
+                firstName: 'Admin',
+                lastName: 'User',
+                email: 'admin@resttek.com',
+                passwordHash: 'hashed_password123',
+                role: 'admin',
+                restaurantId: null
+            }))
+            const spy = vi.spyOn(authService, 'comparePasswords')
+
+            const errorInexistente = await loginUseCase.execute({ email: 'nobody@resttek.com', passwordRaw: 'x' }).catch(e => e)
+            spy.mockClear()
+            const errorIncorrecta = await loginUseCase.execute({ email: 'admin@resttek.com', passwordRaw: 'wrong' }).catch(e => e)
+
+            expect(spy).toHaveBeenCalledTimes(1)
+            expect(errorInexistente).toBeInstanceOf(InvalidCredentialsError)
+            expect(errorIncorrecta).toBeInstanceOf(InvalidCredentialsError)
+            expect(errorInexistente.message).toBe(errorIncorrecta.message)
         })
     })
 })
