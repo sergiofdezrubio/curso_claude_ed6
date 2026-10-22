@@ -153,7 +153,7 @@ Cada tarea dura entre 5 y 10 minutos y tiene un resultado comprobable. Los coman
   - Archivo(s): `packages/api/src/services/order.service.ts`
   - Qué hacer: exigir que `items` sea un array de 1 a 30 elementos, que `quantity` cumpla `Number.isInteger` y esté entre 1 y 50, y que `dishId` sea un string no vacío. Lanzar el error de validación existente con mensajes en español.
   - Hecho cuando: crear un pedido con `quantity` 100000000, `"5"` o 0 devuelve 400 sin bloquear el proceso.
-- [ ] **5. Tests de la validación de pedidos** (7 min) — modelo: sonnet
+- [x] **5. Tests de la validación de pedidos** (7 min) — modelo: sonnet
   - Archivo(s): `packages/api/src/services/order.service.test.ts`
   - Qué hacer: casos para `items` vacío, `quantity` fuera de rango, string o decimal, demasiadas líneas y un pedido válido.
   - Hecho cuando: `npx vitest run src/services/order.service.test.ts` pasa.
