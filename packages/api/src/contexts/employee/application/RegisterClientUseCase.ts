@@ -2,6 +2,7 @@ import { randomUUID } from 'crypto'
 import { Employee } from '@employee/domain/Employee.js'
 import type { IEmployeeRepository } from '@employee/domain/IEmployeeRepository.js'
 import type { IAuthService } from '@employee/domain/IAuthService.js'
+import { Password } from '@employee/domain/value-objects/Password.js'
 import { DuplicatedEmailError } from '@errors/DomainErrors.js'
 
 export interface RegisterClientDTO {
@@ -35,7 +36,8 @@ export class RegisterClientUseCase {
             throw new DuplicatedEmailError()
         }
 
-        const passwordHash = await this.authService.hashPassword(dto.password)
+        const password = Password.create(dto.password)
+        const passwordHash = await this.authService.hashPassword(password.value)
 
         const employee = Employee.create({
             id: randomUUID(),

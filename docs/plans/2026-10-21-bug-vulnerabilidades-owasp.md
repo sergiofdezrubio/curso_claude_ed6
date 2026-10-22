@@ -219,7 +219,7 @@ Cada tarea dura entre 5 y 10 minutos y tiene un resultado comprobable. Los coman
   - Archivo(s): `contexts/employee/domain/value-objects/Password.ts` (nuevo, junto a `Role`) y su test
   - Qué hacer: validar que sea string y que su longitud en bytes esté entre 10 y 72, con errores de dominio en español.
   - Hecho cuando: tests con vacío, `undefined`, 9 caracteres, 73 bytes y válida.
-- [ ] **20. Usar `Password` en los casos de uso** (10 min) — modelo: sonnet
+- [x] **20. Usar `Password` en los casos de uso** (10 min) — modelo: sonnet
   - Archivo(s): `RegisterClientUseCase.ts`, `CreateEmployeeUseCase.ts` y sus tests
   - Qué hacer: validar la contraseña antes de hashear. Un `password` ausente debe dar 400, no 500.
   - Hecho cuando: registrar con `password: ""` devuelve 400.

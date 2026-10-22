@@ -3,6 +3,7 @@ import { CreateEmployeeUseCase } from '@employee/application/CreateEmployeeUseCa
 import { LoginUseCase } from '@employee/application/LoginUseCase.js'
 import { Employee } from '@employee/domain/Employee.js'
 import { describe, it, expect, beforeEach } from 'vitest'
+import { InvalidPasswordError } from '@errors/DomainErrors.js'
 
 describe('Employee Application Use Cases', () => {
     let employeeRepo: MockEmployeeRepository
@@ -40,12 +41,31 @@ describe('Employee Application Use Cases', () => {
             expect(saved).not.toBeNull()
         })
 
+        it.each([
+            ['vacía', ''],
+            ['ausente', undefined],
+            ['nula', null],
+            ['no string', 12345678901],
+            ['de 9 caracteres', '123456789'],
+            ['de 73 bytes', 'a'.repeat(73)]
+        ])('should throw InvalidPasswordError con contraseña %s sin guardar', async (_nombre, passwordPlain) => {
+            await expect(createEmployeeUseCase.execute({
+                firstName: 'Eve',
+                lastName: 'Doe',
+                email: 'eve@resttek.com',
+                passwordPlain: passwordPlain as any,
+                role: 'camarero',
+                restaurantId: 'r1'
+            })).rejects.toThrow(InvalidPasswordError)
+            expect(await employeeRepo.findByEmail('eve@resttek.com')).toBeNull()
+        })
+
         it('should throw DuplicatedEmailError if email already exists', async () => {
             await createEmployeeUseCase.execute({
                 firstName: 'Alice',
                 lastName: 'Smith',
                 email: 'alice@resttek.com',
-                passwordPlain: 'pass',
+                passwordPlain: 'securepass1',
                 role: 'manager',
                 restaurantId: 'r1'
             })
@@ -54,7 +74,7 @@ describe('Employee Application Use Cases', () => {
                 firstName: 'Bob',
                 lastName: 'Jones',
                 email: 'alice@resttek.com',
-                passwordPlain: 'pass2',
+                passwordPlain: 'securepass2',
                 role: 'camarero',
                 restaurantId: 'r1'
             })).rejects.toThrow('Email is already in use')
