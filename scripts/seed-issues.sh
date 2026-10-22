@@ -117,7 +117,8 @@ ensure_label() {
     return
   fi
 
-  if ! gh label list "${GH_REPO_ARGS[@]}" --search "$label" --json name -q '.[].name' \
+  # No se usa --search: la búsqueda de gh puede no devolver etiquetas existentes.
+  if ! gh label list "${GH_REPO_ARGS[@]}" --limit 200 --json name -q '.[].name' \
       | grep -Fxq "$label"; then
     echo "Creando etiqueta '$label'..."
     gh label create "$label" --color "$(label_color "$label")" "${GH_REPO_ARGS[@]}" >/dev/null
