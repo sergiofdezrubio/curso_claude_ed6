@@ -1,7 +1,7 @@
 import type { Request, Response, NextFunction } from 'express'
 import { describe, it, expect, vi } from 'vitest'
 import { errorHandler } from '@shared/infrastructure/http/errorHandler.js'
-import { ForbiddenActionError, OrderNotFoundError, InvalidOrderStatusError } from '@errors/DomainErrors.js'
+import { DuplicatedEmailError, ForbiddenActionError, OrderNotFoundError, InvalidOrderStatusError } from '@errors/DomainErrors.js'
 
 const ejecutar = (err: unknown) => {
     const json = vi.fn()
@@ -20,6 +20,11 @@ describe('errorHandler', () => {
     it('ForbiddenActionError -> 403', () => {
         const { status } = ejecutar(new ForbiddenActionError())
         expect(status).toHaveBeenCalledWith(403)
+    })
+
+    it('DuplicatedEmailError -> 409', () => {
+        const { status } = ejecutar(new DuplicatedEmailError())
+        expect(status).toHaveBeenCalledWith(409)
     })
 
     it('un AppError sin mapear -> 400', () => {

@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { RegisterClientUseCase } from '@employee/application/RegisterClientUseCase.js'
 import type { IEmployeeRepository } from '@employee/domain/IEmployeeRepository.js'
 import type { IAuthService } from '@employee/domain/IAuthService.js'
-import { DuplicatedEmailError } from '@errors/DomainErrors.js'
+import { DuplicatedEmailError, InvalidPasswordError } from '@errors/DomainErrors.js'
 
 describe('RegisterClientUseCase', () => {
     let mockEmployeeRepo: Partial<IEmployeeRepository>
@@ -31,7 +31,7 @@ describe('RegisterClientUseCase', () => {
             firstName: 'John',
             lastName: 'Doe',
             email: 'john@example.com',
-            password: 'password123'
+            password: 'password1234'
         })
 
         expect(result.token).toBe('mockToken')
@@ -60,9 +60,43 @@ describe('RegisterClientUseCase', () => {
             firstName: 'John',
             lastName: 'Doe',
             email: 'john@example.com',
-            password: 'password123'
+            password: 'password1234'
         })).rejects.toThrow(DuplicatedEmailError)
 
+        expect(mockEmployeeRepo.save).not.toHaveBeenCalled()
+    })
+
+    it('should calcular el hash sobre password.value con una contraseña válida', async () => {
+        vi.mocked(mockEmployeeRepo.findByEmail!).mockResolvedValue(null)
+
+        await useCase.execute({
+            firstName: 'John',
+            lastName: 'Doe',
+            email: 'john@example.com',
+            password: 'password1234'
+        })
+
+        expect(mockAuthService.hashPassword).toHaveBeenCalledWith('password1234')
+    })
+
+    it.each([
+        ['vacía', ''],
+        ['ausente', undefined],
+        ['nula', null],
+        ['no string', 12345678901],
+        ['de 9 caracteres', '123456789'],
+        ['de 73 bytes', 'a'.repeat(73)]
+    ])('should throw InvalidPasswordError con contraseña %s sin hashear ni guardar', async (_nombre, password) => {
+        vi.mocked(mockEmployeeRepo.findByEmail!).mockResolvedValue(null)
+
+        await expect(useCase.execute({
+            firstName: 'John',
+            lastName: 'Doe',
+            email: 'john@example.com',
+            password: password as any
+        })).rejects.toThrow(InvalidPasswordError)
+
+        expect(mockAuthService.hashPassword).not.toHaveBeenCalled()
         expect(mockEmployeeRepo.save).not.toHaveBeenCalled()
     })
 })

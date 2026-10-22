@@ -13,6 +13,10 @@ const FORBIDDEN_ERRORS = [
     'ForbiddenActionError'
 ]
 
+const CONFLICT_ERRORS = [
+    'DuplicatedEmailError'
+]
+
 const UNAUTHORIZED_ERRORS = [
     'InvalidCredentialsError'
 ]
@@ -27,6 +31,8 @@ export const errorHandler = (err: any, _req: Request, res: Response, _next: Next
             statusCode = 401
         } else if (FORBIDDEN_ERRORS.includes(err.name)) {
             statusCode = 403
+        } else if (CONFLICT_ERRORS.includes(err.name)) {
+            statusCode = 409
         }
 
         res.status(statusCode).json({

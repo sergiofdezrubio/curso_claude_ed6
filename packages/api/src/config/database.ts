@@ -169,6 +169,32 @@ export class Database {
         for (const q of queries) {
             if (q.trim()) await this.run(q)
         }
+
+        await this.migrateEmailsNocase()
+    }
+
+    /**
+     * Garantiza emails únicos sin distinguir mayúsculas (API-H5/H17). Es idempotente y se ejecuta en cada arranque:
+     * pasa a minúsculas los emails existentes y crea un índice único COLLATE NOCASE.
+     * Si ya hay emails que solo difieren en mayúsculas, no toca datos ni crea el índice: avisa y continúa.
+     */
+    public async migrateEmailsNocase(): Promise<void> {
+        const duplicados = await this.all<{ email: string }>(
+            'SELECT lower(email) AS email FROM employees GROUP BY lower(email) HAVING COUNT(*) > 1'
+        )
+        if (duplicados.length > 0) {
+            console.warn(
+                'AVISO: no se crea el índice único de emails sin distinguir mayúsculas porque hay emails duplicados ' +
+                `que solo difieren en mayúsculas: ${duplicados.map(d => d.email).join(', ')}. ` +
+                'Resuélvelos manualmente; no se ha modificado ningún dato.'
+            )
+            return
+        }
+
+        await this.run('UPDATE employees SET email = lower(email) WHERE email <> lower(email)')
+        await this.run(
+            'CREATE UNIQUE INDEX IF NOT EXISTS idx_employees_email_nocase ON employees(email COLLATE NOCASE)'
+        )
     }
 }
 

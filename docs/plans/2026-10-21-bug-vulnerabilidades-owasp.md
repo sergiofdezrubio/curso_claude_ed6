@@ -16,7 +16,7 @@ Esta tabla y las casillas de las tareas son la fuente de verdad del progreso. Un
 | 1 | Secreto JWT | 1-3 | — | completada |
 | 2 | Pedidos | 4-12 | 1 | completada |
 | 3 | Aislamiento multi-tenant en platos e ingredientes | 13-17 | 1 | completada |
-| 4 | Autenticación | 18-23 | 1 | pendiente |
+| 4 | Autenticación | 18-23 | 1 | completada |
 | 5 | Integridad de datos | 24-28 | 2 | pendiente |
 | 6 | Configuración y registro de eventos | 29-31 | 1 | pendiente |
 | 7 | Revocación de sesiones | 32-34 | 1, 3 | pendiente |
@@ -211,30 +211,31 @@ Cada tarea dura entre 5 y 10 minutos y tiene un resultado comprobable. Los coman
 
 ### Fase 4 — Autenticación (`API-H5`, `API-H6`, `API-H7`, `API-H17`)
 
-- [ ] **18. Rate limiting en login y registro** (8 min) — modelo: sonnet
+- [x] **18. Rate limiting en login y registro** (8 min) — modelo: sonnet
   - Archivo(s): `packages/api/package.json`, `contexts/employee/infrastructure/http/auth.routes.ts`
   - Qué hacer: instalar `express-rate-limit`. Login: 5 intentos cada 15 minutos por IP; registro: 10 por hora. Mensaje en español y cabeceras estándar. Desactivable en `NODE_ENV=test`.
   - Hecho cuando: el sexto login fallido seguido devuelve 429.
-- [ ] **19. Value object `Password`** (8 min) — modelo: sonnet
+- [x] **19. Value object `Password`** (8 min) — modelo: sonnet
   - Archivo(s): `contexts/employee/domain/value-objects/Password.ts` (nuevo, junto a `Role`) y su test
   - Qué hacer: validar que sea string y que su longitud en bytes esté entre 10 y 72, con errores de dominio en español.
   - Hecho cuando: tests con vacío, `undefined`, 9 caracteres, 73 bytes y válida.
-- [ ] **20. Usar `Password` en los casos de uso** (10 min) — modelo: sonnet
+- [x] **20. Usar `Password` en los casos de uso** (10 min) — modelo: sonnet
   - Archivo(s): `RegisterClientUseCase.ts`, `CreateEmployeeUseCase.ts` y sus tests
   - Qué hacer: validar la contraseña antes de hashear. Un `password` ausente debe dar 400, no 500.
   - Hecho cuando: registrar con `password: ""` devuelve 400.
-- [ ] **21. Login sin diferencia de tiempos** (8 min) — modelo: sonnet
+- [x] **21. Login sin diferencia de tiempos** (8 min) — modelo: sonnet
   - Archivo(s): `contexts/employee/application/LoginUseCase.ts` y su test
   - Qué hacer: si el email no existe, ejecutar igualmente `compare` contra un hash ficticio precalculado y devolver el mismo error genérico.
   - Hecho cuando: el test confirma que se llama a `compare` en ambos caminos.
-- [ ] **22. Normalizar el email** (5 min) — modelo: haiku
+- [x] **22. Normalizar el email** (5 min) — modelo: haiku
   - Archivo(s): `contexts/shared/domain/value-objects/Email.ts`
   - Qué hacer: aplicar `trim().toLowerCase()` antes de validar y guardar.
   - Hecho cuando: `Email.create('Admin@Resttek.com').value` devuelve `admin@resttek.com`.
-- [ ] **23. Migración `UNIQUE COLLATE NOCASE` en emails** (10 min) — modelo: sonnet
+- [x] **23. Migración `UNIQUE COLLATE NOCASE` en emails** (10 min) — modelo: sonnet
   - Archivo(s): `packages/api/src/config/database.ts` (migraciones iniciales)
   - Qué hacer: índice único `COLLATE NOCASE` sobre `employees.email` y paso previo que pase a minúsculas los emails existentes (`UPDATE employees SET email = lower(email)`). Comprobar que no hay duplicados antes de crear el índice.
   - Hecho cuando: `npm run seed` sigue funcionando y registrar `ADMIN@resttek.com` devuelve 409.
+  - Desviación: se normaliza el email con `new Email(...).getValue()` en `LoginUseCase`, `RegisterClientUseCase` y `CreateEmployeeUseCase`, y `SqliteEmployeeRepository.findByEmail` compara con `COLLATE NOCASE`; sin ello el duplicado no se detectaba y el login con mayúsculas fallaba. Además `errorHandler` mapea `DuplicatedEmailError` a 409 (antes devolvía 400). Si hay emails duplicados que solo difieren en mayúsculas, la migración no toca datos ni crea el índice y emite un `console.warn`.
 
 ### Fase 5 — Integridad de datos (`API-H9`, `API-H10`, `API-H12`)
 

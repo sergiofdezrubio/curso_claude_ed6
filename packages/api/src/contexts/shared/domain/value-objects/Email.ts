@@ -4,10 +4,12 @@ export class Email {
     private readonly value: string
 
     constructor(value: string) {
-        if (!this.isValid(value)) {
+        // Normalizamos antes de validar y guardar: sin espacios y en minúsculas
+        const normalized = value.trim().toLowerCase()
+        if (!this.isValid(normalized)) {
             throw new InvalidEmailError()
         }
-        this.value = value
+        this.value = normalized
     }
 
     private isValid(email: string): boolean {

@@ -1,6 +1,12 @@
 import type { IEmployeeRepository } from '@employee/domain/IEmployeeRepository.js'
 import type { IAuthService } from '@employee/domain/IAuthService.js'
-import { InvalidCredentialsError } from '@errors/DomainErrors.js'
+import { Email } from '@shared/domain/value-objects/Email.js'
+import { InvalidCredentialsError, InvalidEmailError } from '@errors/DomainErrors.js'
+
+// Hash bcrypt ficticio (coste 12, igual que SALT_ROUNDS de BcryptAuthService), precalculado
+// sobre una cadena aleatoria que no es ninguna contraseña real. Se usa para igualar los tiempos
+// de respuesta cuando el email no existe (API-H6).
+const DUMMY_PASSWORD_HASH = '$2b$12$.DTAlFbjLXysgrHH0rxF5O9/Mz5Oa6JQfXI7ZLqwd1TeVEpH0w4sK'
 
 export interface LoginDTO {
     email: string
@@ -26,14 +32,19 @@ export class LoginUseCase {
     ) {}
 
     async execute(dto: LoginDTO): Promise<LoginResponse> {
-        const employee = await this.employeeRepository.findByEmail(dto.email)
-
-        if (!employee) {
-            throw new InvalidCredentialsError()
+        // Un email con formato inválido no puede existir: se trata como "no encontrado" (mismo error genérico)
+        let employee = null
+        try {
+            employee = await this.employeeRepository.findByEmail(new Email(dto.email).getValue())
+        } catch (error) {
+            if (!(error instanceof InvalidEmailError)) throw error
         }
 
-        const isValid = await this.authService.comparePasswords(dto.passwordRaw, employee.passwordHash)
-        if (!isValid) {
+        // Siempre se ejecuta una única comparación, exista o no el email, para no revelar su existencia por tiempo
+        const storedHash = employee ? employee.passwordHash : DUMMY_PASSWORD_HASH
+        const isValid = await this.authService.comparePasswords(dto.passwordRaw, storedHash)
+
+        if (!employee || !isValid) {
             throw new InvalidCredentialsError()
         }
 

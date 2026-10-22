@@ -42,6 +42,11 @@ describe('SqliteEmployeeRepository (Integration)', () => {
         expect(found?.role).toBe('manager')
     })
 
+    it('encuentra un empleado por email sin distinguir mayúsculas', async () => {
+        const found = await repo.findByEmail('EVE@RESTTEK.COM')
+        expect(found?.id).toBe('e1')
+    })
+
     it('should find an employee by email', async () => {
         const found = await repo.findByEmail('eve@resttek.com')
         expect(found).not.toBeNull()
