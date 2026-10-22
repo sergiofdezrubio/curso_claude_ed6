@@ -2,7 +2,7 @@
 
 - **Tipo:** bug
 - **Fecha:** 2026-10-21
-- **Estado:** pendiente
+- **Estado:** en curso
 - **Tiempo total estimado:** 440 min (52 tareas)
 
 ## Estado de las fases
@@ -13,7 +13,7 @@ Esta tabla y las casillas de las tareas son la fuente de verdad del progreso. Un
 
 | Fase | Título | Tareas | Depende de | Estado |
 | ---- | ------ | ------ | ---------- | ------ |
-| 1 | Secreto JWT | 1-3 | — | pendiente |
+| 1 | Secreto JWT | 1-3 | — | completada |
 | 2 | Pedidos | 4-12 | 1 | pendiente |
 | 3 | Aislamiento multi-tenant en platos e ingredientes | 13-17 | 1 | pendiente |
 | 4 | Autenticación | 18-23 | 1 | pendiente |
@@ -134,15 +134,15 @@ Cada tarea dura entre 5 y 10 minutos y tiene un resultado comprobable. Los coman
 
 ### Fase 1 — Secreto JWT (`API-H3`, `API-H11`)
 
-- [ ] **1. Crear el módulo de entorno** (10 min) — modelo: sonnet
+- [x] **1. Crear el módulo de entorno** (10 min) — modelo: sonnet
   - Archivo(s): `packages/api/src/config/env.ts` (nuevo), `packages/api/tsconfig.json` (alias `@config` ya existe)
   - Qué hacer: importar `dotenv/config`, exportar `JWT_SECRET`. Si `NODE_ENV` no es `test` ni `development` y el secreto falta o tiene menos de 32 caracteres, lanzar un `Error` en español al cargar. En `test` y `development` usar un valor fijo de desarrollo.
   - Hecho cuando: `NODE_ENV=production npx tsx -e "import('./src/config/env.ts')"` falla con el mensaje, y con un secreto válido no.
-- [ ] **2. Usar el secreto único y endurecer JWT** (5 min) — modelo: haiku
+- [x] **2. Usar el secreto único y endurecer JWT** (5 min) — modelo: haiku
   - Archivo(s): `contexts/shared/infrastructure/http/middlewares.ts`, `contexts/employee/infrastructure/BcryptAuthService.ts`
   - Qué hacer: sustituir `process.env.JWT_SECRET || '...'` por el import de `@config/env.js`. Añadir `{ algorithms: ['HS256'] }` en `jwt.verify` y `{ algorithm: 'HS256' }` en `sign`. Subir `SALT_ROUNDS` a 12.
   - Hecho cuando: `grep -rn "super-secret-resttek-key" packages/api/src` solo aparece en `config/env.ts`.
-- [ ] **3. Test del módulo de entorno** (8 min) — modelo: sonnet
+- [x] **3. Test del módulo de entorno** (8 min) — modelo: sonnet
   - Archivo(s): `packages/api/src/config/env.test.ts` (nuevo), `packages/api/vitest.config.ts`
   - Qué hacer: tests con `vi.resetModules()` que comprueban el fallo en producción sin secreto o con secreto corto y el éxito con uno válido. Fijar `NODE_ENV=test` en la config de vitest si no estuviera.
   - Hecho cuando: `npm test` pasa en verde.
