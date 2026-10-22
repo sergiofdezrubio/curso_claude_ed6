@@ -215,7 +215,7 @@ Cada tarea dura entre 5 y 10 minutos y tiene un resultado comprobable. Los coman
   - Archivo(s): `packages/api/package.json`, `contexts/employee/infrastructure/http/auth.routes.ts`
   - Qué hacer: instalar `express-rate-limit`. Login: 5 intentos cada 15 minutos por IP; registro: 10 por hora. Mensaje en español y cabeceras estándar. Desactivable en `NODE_ENV=test`.
   - Hecho cuando: el sexto login fallido seguido devuelve 429.
-- [ ] **19. Value object `Password`** (8 min) — modelo: sonnet
+- [x] **19. Value object `Password`** (8 min) — modelo: sonnet
   - Archivo(s): `contexts/employee/domain/value-objects/Password.ts` (nuevo, junto a `Role`) y su test
   - Qué hacer: validar que sea string y que su longitud en bytes esté entre 10 y 72, con errores de dominio en español.
   - Hecho cuando: tests con vacío, `undefined`, 9 caracteres, 73 bytes y válida.

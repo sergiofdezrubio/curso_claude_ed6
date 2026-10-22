@@ -174,3 +174,9 @@ export class ForbiddenActionError extends AppError {
     super('No tienes permiso para esta acción')
   }
 }
+
+export class InvalidPasswordError extends AppError {
+    constructor(message?: string) {
+        super(message ?? 'Contraseña no válida')
+    }
+}
