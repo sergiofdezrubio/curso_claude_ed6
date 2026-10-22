@@ -64,13 +64,13 @@ Cada rama de trabajo se desarrolla en su propio `git worktree`, dentro de `.clau
 
 - Un worktree por rama: Git no permite tener la misma rama en dos worktrees.
 - Si la skill lanza tareas en paralelo, cada tarea de la tanda tiene una sub-rama y un worktree propios, con el sufijo `_t<N>`: `<rama-de-fase>_t<N>` (por ejemplo `dev/fix_vulnerabilidades-owasp_fase-3_t13`). Salen de la rama de fase y se integran en ella con `--no-ff` antes de continuar; los worktrees de tarea se retiran al integrarlas.
-- Si el plan se implementa por fases, cada fase tiene su propia rama con el sufijo `_fase-<N>`: `dev/fix_<nombre>_fase-<N>` (y sus sub-ramas de tarea, `dev/fix_<nombre>_fase-<N>_t<M>`). Cada fase sale del `develop` actual y se integra en él antes de empezar la siguiente.
-- Comandos útiles: `git worktree add -b <rama> <ruta> develop`, `git worktree list`, `git worktree remove <ruta>`.
+- Si el plan se implementa por fases, cada fase tiene su propia rama con el sufijo `_fase-<N>`: `dev/fix_<nombre>_fase-<N>` (y sus sub-ramas de tarea, `dev/fix_<nombre>_fase-<N>_t<M>`). Cada fase sale de `origin/develop`, se entrega con un pull request y no se empieza otra que dependa de ella hasta que ese PR esté mergeado.
+- Comandos útiles: `git worktree add -b <rama> <ruta> origin/develop`, `git worktree list`, `git worktree remove <ruta>`, `gh pr create --base develop`, `gh pr list --state open`.
 
 ## Reglas
 
-1. Nunca se commitea directamente en `main` ni en `develop`; solo se llega a ellas con merge.
-2. **`main` está protegida para la skill `implement-plan`**: nunca la modifica de ninguna forma. **`develop` solo se modifica con `git merge --no-ff` de una rama `dev/...` terminada** (Fase 5 de la skill): el merge se prueba antes de confirmarlo (`--no-commit`, `npm test` y `ng build` sobre el resultado) y se aborta si hay conflictos o fallos. Nada de rebase, reset, cherry-pick ni commits directos en `develop`. Los `release` y `hotfix`, el merge en `main` y las etiquetas de versión los hace una persona, fuera de la skill.
-3. Los merges, tanto los de la skill como los de una persona, se hacen con `--no-ff` para conservar la historia de la rama.
+1. Nunca se commitea directamente en `main` ni en `develop`; solo se llega a ellas con merge (en `develop`, mediante un pull request).
+2. **`main` y `develop` están protegidas para la skill `implement-plan`**: nunca las modifica. La skill termina publicando la rama `dev/...` con `git push -u origin <rama>` y abriendo un **pull request hacia `develop`** (`gh pr create --base develop`) (Fase 5 de la skill), tras actualizar la rama con `origin/develop` y comprobar que los tests pasan. **El PR lo revisa y lo mergea una persona**: la skill nunca ejecuta `gh pr merge` ni aprueba o cierra PR. Los `release` y `hotfix`, el merge en `main` y las etiquetas de versión también los hace una persona, fuera de la skill.
+3. Los merges de PR en `develop` se hacen con merge commit (`gh pr merge --merge` o «Create a merge commit» en GitHub), no con squash ni rebase, para conservar la historia de la rama y de sus commits por tarea. Las ramas de fase salen de `origin/develop`.
 4. Una rama temporal se borra después de integrarse, no antes.
 5. Un `release` o `hotfix` se integra en `main` **y** en `develop`, y se etiqueta en `main`, también fuera de esta skill.

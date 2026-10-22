@@ -1,6 +1,6 @@
 ---
 name: implement-plan
-description: Implementa un plan de docs/plans (entero o por fases) siguiendo Gitflow, con una rama por plan o fase trabajada en su propio git worktree, un commit por tarea y tests que deben pasar antes de dar cada tarea por terminada. La sesión principal orquesta un subagente por tarea con el modelo indicado en el plan y, solo cuando las tareas son independientes, los lanza en paralelo, cada uno en su propio worktree. Al terminar y con los tests en verde, integra la rama en develop con merge --no-ff. Nunca toca main. Úsala cuando el usuario pida implementar, ejecutar o desarrollar un plan generado con plan-feature, o una fase concreta de él.
+description: Implementa un plan de docs/plans (entero o por fases) siguiendo Gitflow, con una rama por plan o fase trabajada en su propio git worktree, un commit por tarea y tests que deben pasar antes de dar cada tarea por terminada. La sesión principal orquesta un subagente por tarea con el modelo indicado en el plan y, solo cuando las tareas son independientes, los lanza en paralelo, cada uno en su propio worktree. Al terminar y con los tests en verde, publica la rama de trabajo y abre un pull request hacia develop; nunca lo mergea. No modifica develop ni main. Úsala cuando el usuario pida implementar, ejecutar o desarrollar un plan generado con plan-feature, o una fase concreta de él.
 argument-hint: "[ruta o nombre del plan en docs/plans] [fase N]"
 ---
 
@@ -12,7 +12,7 @@ Plan a implementar: $ARGUMENTS
 
 ## Planes por fases
 
-Un plan largo puede traer, antes de la sección 1, una tabla **«Estado de las fases»** con las columnas `Fase | Título | Tareas | Depende de | Estado`. El estado de cada fila es `pendiente`, `en curso` o `completada`. Esa tabla, junto con las casillas `- [x]` de las tareas, es la única fuente de verdad de lo que ya está hecho: un agente de una iteración posterior solo tiene que leerla (en `develop`, donde se integra cada fase).
+Un plan largo puede traer, antes de la sección 1, una tabla **«Estado de las fases»** con las columnas `Fase | Título | Tareas | Depende de | Estado`. El estado de cada fila es `pendiente`, `en curso` o `completada`. Esa tabla, junto con las casillas `- [x]` de las tareas, es la única fuente de verdad de lo que ya está hecho: un agente de una iteración posterior solo tiene que leerla (en `origin/develop`, donde se integra cada fase cuando se aprueba su pull request). Una fase con el PR abierto y sin mergear **no cuenta como completada** para las fases que dependen de ella.
 
 - Si el plan trae la tabla, cada ejecución implementa **una fase**: la que indique `$ARGUMENTS`, o la primera `pendiente` o `en curso` cuyas dependencias estén todas `completada`. Nunca se rehace una fase `completada` ni una tarea ya marcada `- [x]`.
 - Si el plan no trae la tabla, se trata como una sola fase que abarca todas las tareas.
@@ -54,11 +54,11 @@ El máximo es de tres subagentes simultáneos. Ante la duda, secuencial.
 
 - **Una rama por plan** (o por fase, si el plan trae la tabla de fases), con el nombre `<environment>/<tipo>_<nombre_funcionalidad>`, más el sufijo `_fase-<N>` cuando se implementa una fase (ver `references/gitflow.md`).
 - **Todos los cambios se hacen en un git worktree dedicado**, nunca en el directorio de trabajo principal (ver Fase 1, paso 6). Cuando se paralelizan tareas (ver «Orquestación con subagentes»), **cada subagente trabaja en su propio worktree y su propia sub-rama**.
-- **Un commit por cada tarea del plan**, creado con la skill `commit` (herramienta `Skill`, `skill: "commit"`) **sin pedir confirmación al usuario por cada commit**. No escribas el mensaje a mano ni uses `git commit` directamente. Lo crea el subagente que ejecuta la tarea. Las excepciones son los commits de merge (los de sub-ramas de tarea en la rama de fase y el de la Fase 5), que se crean con `git merge`.
+- **Un commit por cada tarea del plan**, creado con la skill `commit` (herramienta `Skill`, `skill: "commit"`) **sin pedir confirmación al usuario por cada commit**. No escribas el mensaje a mano ni uses `git commit` directamente. Lo crea el subagente que ejecuta la tarea. Las excepciones son los commits de merge (los de sub-ramas de tarea en la rama de fase y el de actualizar la rama de trabajo con `origin/develop` en la Fase 5), que se crean con `git merge`.
 - **Ninguna tarea ni el plan se dan por terminados sin verificación en verde.** Cada tarea con código de la API lleva sus tests (vitest) en el mismo commit, y `npm test` completo debe pasar antes de commitear. Las tareas de frontend se verifican con `ng build` del paquete afectado (los frontends no tienen tests configurados; no añadas un framework de tests si el plan no lo pide).
-- **`main` es intocable y `develop` solo se modifica con el merge de la Fase 5.** `main` nunca se modifica desde esta skill (ni merge, ni rebase, ni cherry-pick, ni reset, ni commit, ni renombrarla, ni borrarla). En `develop` la única operación permitida es `git merge --no-ff` de la rama de trabajo, **una vez terminada la fase y con los tests en verde**, siguiendo exactamente la Fase 5. Nada de rebase, cherry-pick, reset, commits directos, renombrar o borrar `develop`, ni `push` hacia ella. Las ramas `release/*` y `prod/*` (hotfix) y su integración en `main` quedan fuera de esta skill.
+- **`main` y `develop` son intocables.** La skill nunca las modifica: ni merge, ni rebase, ni cherry-pick, ni reset, ni commit directo, ni renombrarlas, ni borrarlas, ni `push` hacia ellas. Solo *lee* de ellas (`git fetch`, `git log`, `git diff`) y *crea* ramas a partir de `origin/develop`. La integración en `develop` se hace siempre con un **pull request** (Fase 5) que **aprueba y mergea una persona**: la skill nunca ejecuta `gh pr merge` (ni con `--auto` ni con `--admin`) ni aprueba o cierra PR. Las ramas `release/*` y `prod/*` (hotfix) y su integración en `main` quedan fuera de esta skill.
 - **Comprueba la rama y el worktree antes de cada commit.** Antes de crear cualquier commit ejecuta `git rev-parse --show-toplevel` y `git branch --show-current`; si no estás en el worktree y la rama de trabajo del plan (o de tu tarea), para y muévete a ellos (o avisa al usuario si no puedes hacerlo sin perder cambios). Los commits de tareas nunca se hacen en `main`, `develop` ni `release/*`.
-- Nada de `git push`, `--force`, `--no-verify`, `--amend` ni borrar ramas o worktrees sin confirmación explícita del usuario. La única excepción son los worktrees temporales que crea la propia skill (el de `develop` de la Fase 5 y los de las tareas de una tanda paralela, una vez integradas).
+- Nada de `git push` (salvo el de la rama de trabajo de la Fase 5, que forma parte del flujo y se hace sin pedir confirmación), `--force`, `--no-verify`, `--amend` ni borrar ramas o worktrees (locales o remotos) sin confirmación explícita del usuario. La única excepción son los worktrees de las tareas de una tanda paralela, una vez integradas en la rama de fase.
 - Todo lo que se escriba (documentación, mensajes de error, nombres de tests, mensajes de commit) va en español.
 - Respeta la arquitectura de `CLAUDE.md` (dos estilos en la API: hexagonal en `contexts/employee` y por capas `routes → controllers → services → repositories → models` en el resto, con el SQL solo en `repositories`). No añadas dependencias que el plan no pida, ni ORM.
 - No toques nunca la base de datos real (`packages/api/resttek.db`): los tests usan `NODE_ENV=test` (SQLite en memoria) y para probar a mano usa una BD temporal en el directorio scratchpad.
@@ -68,7 +68,7 @@ El máximo es de tres subagentes simultáneos. Ante la duda, secuencial.
 ### Fase 0. Elegir y leer el plan
 
 1. Si `$ARGUMENTS` está vacío, lista `docs/plans/` y pregunta con `AskUserQuestion` cuál implementar. Si es un nombre parcial, resuélvelo contra `docs/plans/`; si hay varias coincidencias, pregunta.
-2. Lee el plan completo, **desde `develop`** (la rama que contiene lo ya integrado). Si trae la tabla «Estado de las fases», elige la fase a implementar según la sección «Planes por fases», comprueba que sus dependencias están `completada` y que las casillas de las tareas coinciden con la tabla (si no coinciden, para y avisa). Si el estado del plan no es `pendiente` ni `en curso`, o la fase elegida ya está `completada`, dilo y no hagas nada. Si el plan no trae la tabla y ya tiene tareas marcadas, muestra qué falta y confirma con el usuario si se retoma.
+2. Ejecuta `git fetch origin` y lee el plan completo **desde `origin/develop`** (`git show origin/develop:<ruta del plan>`), que es la rama que contiene lo ya integrado (el `develop` local puede ir por detrás). Si trae la tabla «Estado de las fases», elige la fase a implementar según la sección «Planes por fases», comprueba que sus dependencias están `completada` y que las casillas de las tareas coinciden con la tabla (si no coinciden, para y avisa). Si el estado del plan no es `pendiente` ni `en curso`, o la fase elegida ya está `completada`, dilo y no hagas nada. Si el plan no trae la tabla y ya tiene tareas marcadas, muestra qué falta y confirma con el usuario si se retoma.
 3. Si el plan tiene dudas abiertas en la sección "Riesgos y dudas abiertas" que bloqueen la implementación de la fase, pregúntalas ahora con `AskUserQuestion`.
 4. Deduce de la cabecera y del nombre del fichero: el tipo (`feature` → `feat`, `bug` → `fix`) y el nombre (el slug sin fecha ni tipo).
 
@@ -83,9 +83,9 @@ Comprueba el estado con `git branch -a`, `git status --short`, `git log --onelin
 5. **Decidir las ramas del plan** a partir de `develop` (`main` solo en un hotfix urgente, que queda fuera de esta skill). El `<environment>` es `dev`, y **nunca** el nombre de la propia rama permanente: Git no permite `develop` y `develop/x` a la vez.
    - **Caso normal (un solo implementador):** una rama `dev/fix_vulnerabilidades-owasp` (plan entero) o `dev/fix_vulnerabilidades-owasp_fase-2` (una fase).
    - **Tareas en paralelo:** las sub-ramas de tarea (`<rama-de-fase>_t<N>`) solo se crean cuando se lanza una tanda paralela (ver «Orquestación con subagentes») y salen de la rama de fase.
-   - La rama de una fase sale **siempre del `develop` actual**, que ya contiene las fases anteriores integradas. Si una dependencia de la fase no está integrada en `develop`, para y avisa.
+   - La rama de una fase sale **siempre de `origin/develop` actualizado** (tras `git fetch origin`), que ya contiene las fases anteriores integradas. Si una dependencia de la fase no está integrada en `origin/develop` (por ejemplo, su PR sigue abierto), para y avisa indicando el PR (`gh pr list --state open`).
 6. **Crear el worktree** (uno por rama) con la rama nueva, sin tocar el directorio de trabajo principal:
-   - Ubicación: `.claude/workTrees/<rama con "/" sustituida por "-">`, en la raíz del repositorio. Ejemplo: `git worktree add -b dev/fix_vulnerabilidades-owasp_fase-2 .claude/workTrees/dev-fix_vulnerabilidades-owasp_fase-2 develop`.
+   - Ubicación: `.claude/workTrees/<rama con "/" sustituida por "-">`, en la raíz del repositorio. Ejemplo: `git worktree add -b dev/fix_vulnerabilidades-owasp_fase-2 .claude/workTrees/dev-fix_vulnerabilidades-owasp_fase-2 origin/develop` (sale de `origin/develop`, así el `develop` local no se toca).
    - Para que Git no vea los worktrees como ficheros sin seguimiento, comprueba que `.claude/workTrees/` está ignorada y, si no, añádela a `.git/info/exclude` (no modifica ninguna rama).
    - Si la rama ya existe, no uses `-b`: `git worktree add <ruta> <rama>`. Si el worktree ya existe (`git worktree list`), reutilízalo en lugar de crearlo de nuevo.
    - A cada subagente pásale en su prompt la ruta absoluta de su worktree y su rama.
@@ -139,42 +139,37 @@ Una fase (o el plan entero, si no tiene fases) solo está terminada cuando se cu
 - [ ] La fila de la fase en «Estado de las fases» está en `completada`.
 - [ ] Si todas las fases del plan están `completada` (o el plan no tiene fases), el estado de la cabecera es `completado`; si solo lo están algunas, es `en curso`.
 
-Cuando se cumpla, actualiza esos estados en el plan y commitéalo con la skill `commit` (tipo `docs`) si no lo hiciste ya en la última tarea. Si la lista no se cumple, no lo declares terminado: di qué falta y **no hagas el merge de la Fase 5**.
+Cuando se cumpla, actualiza esos estados en el plan y commitéalo con la skill `commit` (tipo `docs`) si no lo hiciste ya en la última tarea. Si la lista no se cumple, no lo declares terminado: di qué falta y **no abras el pull request de la Fase 5**.
 
 Esta lista la comprueba la orquestadora: los subagentes no cierran fases.
 
-### Fase 5. Integrar en `develop`
+### Fase 5. Entregar la fase con un pull request a `develop`
 
-Esta fase es la única en la que se modifica `develop`, y solo con `git merge --no-ff` de la rama de trabajo ya terminada. **Nunca se toca `main`.**
+Esta fase termina con un pull request abierto de la rama de trabajo hacia `develop`. **La skill no integra nada**: ni `develop` ni `main` se modifican. La persona que revisa aprueba y mergea el PR en GitHub.
 
-1. Muestra al usuario el resumen: rama(s), ruta(s) del/los worktree(s), lista de commits (`git log --oneline develop..HEAD`, ejecutado dentro del worktree) y resultado de la verificación.
-2. **Condiciones previas** (si falta alguna, no integres): la Fase 4 está cumplida, el árbol del worktree está limpio, `npm test` pasa en la rama y `develop` no ha avanzado de forma que pueda haber conflictos sin revisar (`git log --oneline HEAD..develop`; si ha avanzado, informa al usuario de qué entra y, si hay solapes, no sigas sin su visto bueno).
-3. **Dónde se hace el merge.** Un merge necesita `develop` desprendida en un worktree. Mira `git worktree list`:
-   - Si `develop` está extraída en el directorio principal o en otro worktree, haz el merge allí solo si su árbol está limpio; si no lo está, para y pregunta.
-   - Si no está extraída en ninguno, crea un worktree temporal (`git worktree add .claude/workTrees/develop develop`) y retíralo al terminar (`git worktree remove`; es el único worktree que esta skill borra sin preguntar).
-4. **Merge con prueba previa.** Dentro del worktree de `develop`:
-   1. Comprueba con `git rev-parse --show-toplevel` y `git branch --show-current` que estás en `develop` y que `main` no es la rama actual.
-   2. `git merge --no-ff --no-commit <rama-de-trabajo>`.
-   3. Si hay conflictos, ejecuta `git merge --abort`, deja `develop` como estaba y explica al usuario qué ficheros chocan. No los resuelvas por tu cuenta.
-   4. Si no hay conflictos, ejecuta `npm test` (y `ng build` de los frontends afectados) **sobre el resultado del merge**. Si algo falla, `git merge --abort` y avisa al usuario con la salida.
-   5. Si todo pasa, confirma el merge con `git commit -m "chore(merge): integra <rama-de-trabajo> en develop"` (mensaje en español, estilo Conventional Commits). Este es el único commit en `develop` que esta skill crea.
-5. Comprueba con `git log --oneline -3 develop` que el merge está en `develop` y que `main` no ha cambiado (`git rev-parse main` igual que antes).
-6. Solo se integra la rama de la fase: las sub-ramas de tarea ya se integraron en ella durante la Fase 3.
-7. **No borres** la rama de trabajo ni su worktree (`git worktree remove`) sin confirmación expresa: déjalos para que la persona que revise pueda inspeccionarlos. Indica en el informe cómo retirarlos (`git worktree remove <ruta>` y `git branch -d <rama>`).
-8. Si hay remoto, ofrece con `AskUserQuestion` publicar `develop` (`git push origin develop`) y la rama de trabajo. No hagas `push` sin confirmación y nunca `push --force`. No hay pull requests en este flujo.
-9. El paso a producción (rama `release/...`, merge en `main` y etiqueta de versión) lo hace siempre una persona, fuera de esta skill; menciónalo como siguiente paso solo cuando todas las fases del plan estén `completada`.
-10. Si el usuario te pide integrar en `main` (o hacer un release o hotfix), explícale que esta skill no lo permite.
+1. Muestra al usuario el resumen: rama, ruta del worktree, lista de commits (`git log --oneline origin/develop..HEAD`, ejecutado dentro del worktree) y resultado de la verificación.
+2. **Condiciones previas** (si falta alguna, no abras el PR): la Fase 4 está cumplida, el árbol del worktree está limpio y `npm test` pasa en la rama. Comprueba también que el remoto y `gh` están operativos (`git remote get-url origin`, `gh auth status` y `gh repo view`); si no lo están, para e informa al usuario.
+3. **Actualiza la rama con `develop`.** Ejecuta `git fetch origin`. Si `origin/develop` ha avanzado (`git log --oneline HEAD..origin/develop`), haz `git merge origin/develop` **sobre la rama de trabajo**, dentro de su worktree (merge, nunca rebase). Si hay conflictos, ejecuta `git merge --abort`, explica al usuario qué ficheros chocan y no los resuelvas por tu cuenta. Si no los hay, repite `npm test` (y `ng build` de los frontends afectados) y, si algo falla, para y avisa con la salida.
+4. **Publica la rama de trabajo** con `git push -u origin <rama-de-trabajo>`, sin pedir confirmación: es el paso que pide este flujo. Solo se publica la rama de la fase (no las sub-ramas de tarea), y nunca `develop`, `main` ni `--force`.
+5. **Abre el pull request.** Antes, comprueba si ya existe uno abierto para esa rama con `gh pr list --head <rama-de-trabajo> --base develop --state open --json number,url`. Si existe, reutilízalo (el `push` ya lo ha actualizado) y, si hace falta, refresca su descripción con `gh pr edit`. Si no existe, créalo con `gh pr create --base develop --head <rama-de-trabajo> --title "<título>" --body "<descripción>"`:
+   - **Título:** Conventional Commits en español, en imperativo y de máximo 72 caracteres, por ejemplo `fix(security): corrige el secreto jwt (fase 1 del plan vulnerabilidades-owasp)`.
+   - **Descripción** en español, con estas secciones: resumen del cambio; fase y tareas realizadas (número y título de cada una); resultado de `npm test` y de los builds (totales, pasados, fallidos); verificación manual que queda pendiente para la persona que revise (por ejemplo, las filas de frontend); riesgos y desviaciones respecto al plan; enlace al plan; y fases de las que depende. Termina con la línea de atribución de las instrucciones de la sesión.
+6. **Lo que la skill nunca hace con el PR:** `gh pr merge` (tampoco con `--auto` ni `--admin`), aprobarlo con `gh pr review --approve`, cerrarlo, ni cambiar su rama base.
+7. **Estado del plan.** La fila `completada` de la fase y las casillas marcadas solo existen en la rama de trabajo hasta que se mergea el PR. Mientras esté abierto, las fases que dependen de ella no pueden empezar (la Fase 0 y el paso 5 de la Fase 1 lo comprueban en `origin/develop`). Una fase independiente sí puede empezar, saliendo de `origin/develop`.
+8. **No borres** la rama de trabajo ni su worktree sin confirmación expresa: déjalos para que la persona que revise pueda inspeccionarlos. Indica en el informe cómo retirarlos una vez mergeado el PR (`git worktree remove <ruta>` y `git branch -d <rama>`; el borrado de la rama remota lo hace GitHub o la persona que mergea).
+9. El paso a producción (rama `release/...`, merge en `main` y etiqueta de versión) lo hace siempre una persona, fuera de esta skill; menciónalo como siguiente paso solo cuando todas las fases del plan estén `completada` en `origin/develop`.
+10. Si el usuario te pide mergear el PR o integrar en `develop` o `main` directamente (o hacer un release o hotfix), explícale que esta skill no lo permite y que el merge lo hace él en GitHub (por ejemplo, con `gh pr merge --merge`, que conserva la historia de la rama).
 
 ### Aviso por Slack
 
-Cuando la fase (o el plan) esté terminada (Fase 4 cumplida) e integrada en `develop` (Fase 5), avisa al equipo en el canal `planes-ed8` con el servidor MCP `slack` (configurado en `.mcp.json`):
+Cuando la fase (o el plan) esté terminada (Fase 4 cumplida) y su pull request abierto (Fase 5), avisa al equipo en el canal `planes-ed8` con el servidor MCP `slack` (configurado en `.mcp.json`):
 
 1. Carga las herramientas del servidor `slack` con `ToolSearch` si no están disponibles (por ejemplo, `select:mcp__slack__slack_list_channels,mcp__slack__slack_post_message`).
 2. Obtén el `channel_id` del canal `planes-ed8` con `slack_list_channels` (la herramienta de publicar necesita el id, no el nombre).
-3. Publica con `slack_post_message` un mensaje breve en español, por ejemplo: `✅ Fase <N> del plan <nombre del plan> implementada e integrada en develop. Rama: <rama>, commits: <n>, tests: <pasados>/<totales>. Fases completadas: <x>/<total>.` Para un plan sin fases, omite la fase.
-4. Si la fase **no** se ha terminado o no se integró (tests fallando, tarea bloqueada, conflictos), no envíes este aviso.
+3. Publica con `slack_post_message` un mensaje breve en español, por ejemplo: `🔀 Fase <N> del plan <nombre del plan> lista para revisar: <enlace al PR>. Rama: <rama>, commits: <n>, tests: <pasados>/<totales>. Fases ya integradas en develop: <x>/<total>.` Para un plan sin fases, omite la fase.
+4. Si la fase **no** se ha terminado o no se abrió el PR (tests fallando, tarea bloqueada, conflictos, fallo del `push`), no envíes este aviso.
 5. Si el servidor `slack` no está disponible, faltan las variables `SLACK_BOT_TOKEN`/`SLACK_TEAM_ID`, no se encuentra el canal o el envío falla, **no interrumpas la skill**: dilo claramente en el informe final e indica que el aviso no se ha enviado. No inventes que se envió.
 
 ### Informe final
 
-Termina con un resumen breve para el usuario: plan y fase implementados, rama(s) y worktree(s) usados (ruta absoluta de cada uno), subagentes lanzados (tarea, modelo, si fue en tanda paralela y si hizo falta reintentar o subir de modelo), sub-ramas que se pueden borrar, número de tareas completadas y de commits, resultado de los tests y de los builds, si se integró en `develop` (hash del commit de merge) o por qué no, si se publicó algo, si se avisó por Slack (o por qué no), las fases que quedan `pendiente` (con su orden recomendado) y cualquier duda o desviación del plan.
+Termina con un resumen breve para el usuario: plan y fase implementados, rama(s) y worktree(s) usados (ruta absoluta de cada uno), subagentes lanzados (tarea, modelo, si fue en tanda paralela y si hizo falta reintentar o subir de modelo), sub-ramas que se pueden borrar, número de tareas completadas y de commits, resultado de los tests y de los builds, el enlace al pull request abierto (y que queda pendiente de que una persona lo revise y lo mergee) o por qué no se abrió, si se avisó por Slack (o por qué no), las fases que quedan `pendiente` (con su orden recomendado) y cualquier duda o desviación del plan.
