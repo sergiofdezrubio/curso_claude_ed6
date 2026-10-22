@@ -1,11 +1,29 @@
-import type { Request, Response } from 'express'
+import type { Request, Response, NextFunction } from 'express'
 import type { OrderService } from '@services/order.service.js'
-import type { AuthRequest } from '@shared/infrastructure/http/middlewares.js'
+import type { AuthRequest, AuthUser } from '@shared/infrastructure/http/middlewares.js'
+import { ForbiddenActionError, RestaurantIdRequiredError } from '@errors/DomainErrors.js'
+
+// Resuelve el restaurante a consultar: el del token, salvo el admin, que puede indicarlo por query.
+function resolverRestaurantId(user: AuthUser, restaurantIdQuery: unknown): string {
+    const consulta = typeof restaurantIdQuery === 'string' && restaurantIdQuery !== ''
+        ? restaurantIdQuery
+        : undefined
+
+    if (user.role === 'admin') {
+        const restaurantId = consulta ?? user.restaurantId
+        if (!restaurantId) throw new RestaurantIdRequiredError()
+        return restaurantId
+    }
+
+    if (!user.restaurantId) throw new ForbiddenActionError()
+    if (consulta !== undefined && consulta !== user.restaurantId) throw new ForbiddenActionError()
+    return user.restaurantId
+}
 
 export class OrderController {
     constructor(private readonly orderService: OrderService) {}
 
-    async createOrder(req: Request, res: Response): Promise<void> {
+    async createOrder(req: Request, res: Response, next: NextFunction): Promise<void> {
         try {
             const user = (req as AuthRequest).user
             if (!user) {
@@ -20,35 +38,26 @@ export class OrderController {
             }, user)
             res.status(201).json(order)
         } catch (error) {
-            if (error instanceof Error) {
-                res.status(400).json({ error: error.message })
-            } else {
-                res.status(500).json({ error: 'Internal Server Error' })
-            }
+            next(error)
         }
     }
 
-    async getActiveOrders(req: Request, res: Response): Promise<void> {
+    async getActiveOrders(req: Request, res: Response, next: NextFunction): Promise<void> {
         try {
             const user = (req as AuthRequest).user
             if (!user) {
                 res.status(401).json({ error: 'Unauthorized' })
                 return
             }
-            const { restaurantId } = req.query
-            if (!restaurantId || typeof restaurantId !== 'string') {
-                res.status(400).json({ error: 'restaurantId is required' })
-                return
-            }
-
+            const restaurantId = resolverRestaurantId(user, req.query.restaurantId)
             const orders = await this.orderService.listActive(restaurantId, user)
             res.status(200).json(orders)
         } catch (error) {
-            res.status(500).json({ error: 'Internal Server Error' })
+            next(error)
         }
     }
 
-    async getMyOrders(req: Request, res: Response): Promise<void> {
+    async getMyOrders(req: Request, res: Response, next: NextFunction): Promise<void> {
         try {
             const user = (req as AuthRequest).user
             if (!user) {
@@ -58,11 +67,11 @@ export class OrderController {
             const orders = await this.orderService.listMine(user)
             res.status(200).json(orders)
         } catch (error) {
-            res.status(500).json({ error: 'Internal Server Error' })
+            next(error)
         }
     }
 
-    async getById(req: Request, res: Response): Promise<void> {
+    async getById(req: Request, res: Response, next: NextFunction): Promise<void> {
         try {
             const user = (req as AuthRequest).user
             if (!user) {
@@ -72,15 +81,11 @@ export class OrderController {
             const order = await this.orderService.getById(req.params.id as string, user)
             res.status(200).json(order)
         } catch (error) {
-            if (error instanceof Error && error.name === 'OrderNotFoundError') {
-                res.status(404).json({ error: error.message })
-            } else {
-                res.status(500).json({ error: 'Internal Server Error' })
-            }
+            next(error)
         }
     }
 
-    async updateItemStatus(req: Request, res: Response): Promise<void> {
+    async updateItemStatus(req: Request, res: Response, next: NextFunction): Promise<void> {
         try {
             const user = (req as AuthRequest).user
             if (!user) {
@@ -94,11 +99,7 @@ export class OrderController {
             await this.orderService.updateItemStatus(orderId, itemId, status, user)
             res.status(204).send()
         } catch (error) {
-            if (error instanceof Error && (error.name === 'OrderNotFoundError' || error.name === 'InvalidOrderStatusError')) {
-                res.status(400).json({ error: error.message })
-            } else {
-                res.status(500).json({ error: 'Internal Server Error' })
-            }
+            next(error)
         }
     }
 }

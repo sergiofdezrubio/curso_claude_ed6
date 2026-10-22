@@ -169,7 +169,7 @@ Cada tarea dura entre 5 y 10 minutos y tiene un resultado comprobable. Los coman
   - Archivo(s): `packages/api/src/services/order.service.ts`
   - Qué hacer: en `updateItemStatus`, validar la transición pedida contra la matriz de la tarea 6 y el rol del usuario. Rechazar con 403 las no permitidas y con 400 las no válidas.
   - Hecho cuando: un cocinero no puede marcar `entregado` y un camarero no puede marcar `preparando`.
-- [ ] **9. Controlador de pedidos: usuario, errores y `restaurantId` del token** (10 min) — modelo: sonnet
+- [x] **9. Controlador de pedidos: usuario, errores y `restaurantId` del token** (10 min) — modelo: sonnet
   - Archivo(s): `packages/api/src/controllers/order.controller.ts`, `contexts/shared/.../errorHandler.ts`
   - Qué hacer: pasar `req.user` al servicio. En `/active` usar el `restaurantId` del token y responder 403 si la query trae otro distinto (salvo admin). Sustituir `res.status(...).json({ error: error.message })` por `next(error)` y añadir `OrderNotFoundError` a `NOT_FOUND_ERRORS` (`API-H15`).
   - Hecho cuando: un error de SQLite o un `TypeError` en pedidos responde 500 genérico, y un pedido inexistente, 404.
