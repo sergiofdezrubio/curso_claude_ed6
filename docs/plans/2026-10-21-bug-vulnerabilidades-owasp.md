@@ -2,7 +2,7 @@
 
 - **Tipo:** bug
 - **Fecha:** 2026-10-21
-- **Estado:** pendiente
+- **Estado:** en curso
 - **Tiempo total estimado:** 440 min (52 tareas)
 
 ## Estado de las fases
