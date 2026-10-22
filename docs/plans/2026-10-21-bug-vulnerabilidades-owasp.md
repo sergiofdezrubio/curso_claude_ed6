@@ -7,7 +7,7 @@
 
 ## Estado de las fases
 
-Este plan se ejecuta **por fases**, una por iteración, con la skill `implement-plan` (por ejemplo: «implementa la Fase 2 del plan vulnerabilidades-owasp»). Cada fase va en su propia rama `dev/fix_vulnerabilidades-owasp_fase-<N>` y se integra en `develop` con `merge --no-ff` antes de empezar la siguiente.
+Este plan se ejecuta **por fases**, una por iteración, con la skill `implement-plan` (por ejemplo: «implementa la Fase 2 del plan vulnerabilidades-owasp»). Cada fase va en su propia rama `dev/fix_vulnerabilidades-owasp_fase-<N>` y se entrega con un pull request hacia `develop`. Una persona revisa y mergea el PR (con merge commit); hasta entonces, las fases que dependen de ella no pueden empezar.
 
 Esta tabla y las casillas de las tareas son la fuente de verdad del progreso. Un agente nunca rehace una fase `completada` ni una tarea marcada `- [x]`, y solo empieza una fase cuyas dependencias estén `completada`. La primera tarea de una fase pasa su fila a `en curso`, y la última, a `completada`, en el mismo commit.
 
